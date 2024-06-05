@@ -1,3 +1,21 @@
+# COLLECTION TUPLE IT IS NOT POSSIBLE TO CHANGE
+
+tuple_data = ("test", "test")
+print(tuple_data)
+
+# SET DO NOT ALLOW DUPLICATE
+set_value = {1,2,2}
+
+set_number = set()
+count = 0
+while count < 5:
+    count+=1
+    set_number.add(1)
+
+print(set_number)
+
+
+
 # SPLIT FUNCTION
 
 name = "1,2,3,4,5"
