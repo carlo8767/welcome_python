@@ -1,3 +1,32 @@
+# COLLECTION TUPLE IT IS NOT POSSIBLE TO CHANGE
+
+tuple_data = ("test", "test")
+list_type = list(tuple_data)
+type(tuple_data)
+type(list_type)
+
+print(tuple_data)
+
+# SET DO NOT ALLOW DUPLICATE
+set_value = {1,2,2}
+
+set_number = set()
+count = 0
+while count < 5:
+    count+=1
+    set_number.add(1)
+
+print(set_number)
+
+
+# CONVERT LIST INTO A STRING
+
+list_number = ["1","2","3"]
+list_string_number = ','.join(list_number)
+print(list_string_number)
+
+
+
 # SPLIT FUNCTION
 
 name = "1,2,3,4,5"
@@ -5,18 +34,18 @@ split_name = name.split(",")
 print(type(split_name))
 print(split_name)
 
-split_limit = name.split(",", 2)
+split_limit = name.split(",", 1)
 print(split_limit)
 
 
 # FILE OPERATIONS
 
 # WRITE A FILE
-file = open('helloFile.txt', 'w')
+file = open('helloFile.txt', 'w+')
 file.write('I want eat pizza')
 file.close()
 # READ A FILE
-file = open('helloFile.txt', 'r')
+file = open('helloFile.txt', 'r+')
 content = file.read()
 print(content)
 file.close()
