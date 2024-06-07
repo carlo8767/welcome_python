@@ -1,5 +1,38 @@
 import os
 
+
+class decorator:
+    #  with *args you can
+    # pass an unspecified number of arguments
+
+    def test_args_args(self, Firstargs, SecondArgs, ThirdArgs):
+        print(Firstargs)
+        print(SecondArgs)
+        print(ThirdArgs)
+
+    # with  you can  keyword variable length**
+    # pass an unspecified number of arguments
+    def test_args_kwargs(self, FirstArgs, SecondArgs, ThirdArgs):
+        print("FirstArgs:",FirstArgs)
+        print("SecondArgs:",SecondArgs)
+        print("ThirdArgs:",ThirdArgs)
+
+
+# ELSE RUNNED AFTER FOR LOOP
+for numbers in range(0,11):
+    print(numbers)
+else:
+    print("ok")
+
+
+# LIST OPERATIONS
+list_value = ["One", "Two", "Three"]
+list_value = list_value[-3:-1]
+print(list_value)
+
+
+
+
 # DICTIONARY
 
 dictionary_value = {"A":"Exceptional", "B": "Very Good", "C": "Good"}
@@ -7,10 +40,15 @@ dictionary_value = {"A":"Exceptional", "B": "Very Good", "C": "Good"}
 del(dictionary_value["A"])
 
 
-
+list("123")
 # EXTRACT ALL THE KEY FROM A DICTIONARY
 list_dictionary = dictionary_value.keys()
 value_key = dictionary_value.get("A")
+print(value_key)
+
+# EXTRACT ALL THE VALUE FROM A DICTIONARY
+list_dictionary = dictionary_value.keys()
+value_key = dictionary_value.values()
 print(value_key)
 
 str = "carlo"
@@ -37,7 +75,7 @@ print(a, b)
 
 # PRINT TWO TIMES
 tiny_list = ["one"]
-print(tiny_list * 2)
+print(tiny_list * 3)
 
 # ARITHMETIC OPERATOR POWER
 n = 20
@@ -73,12 +111,14 @@ print(list_one is list_two)
 
 a=11
 b=4
-# only division withou decimal
+# only division without decimal
 print(a // b)
 # module
 print(a % b)
 # division
 print(a / b)
+
+print(2**2)
 
 
 # SLICE
@@ -157,3 +197,13 @@ d = {'a': 1, 'b': 2};
 d['c'] = 3;
 print(len(d))
 print(d)
+
+
+
+if __name__ == '__main__':
+
+    test = decorator()
+    list_kwargs = [1,2,3]
+    test.test_args_args(*list_kwargs)
+    dictinary_kwargs = {"FirstArgs":1, "SecondArgs":2, "ThirdArgs":3}
+    test.test_args_kwargs(**dictinary_kwargs)

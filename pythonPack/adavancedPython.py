@@ -1,6 +1,10 @@
 # COLLECTION TUPLE IT IS NOT POSSIBLE TO CHANGE
 
 tuple_data = ("test", "test")
+list_type = list(tuple_data)
+type(tuple_data)
+type(list_type)
+
 print(tuple_data)
 
 # SET DO NOT ALLOW DUPLICATE
@@ -23,18 +27,18 @@ split_name = name.split(",")
 print(type(split_name))
 print(split_name)
 
-split_limit = name.split(",", 2)
+split_limit = name.split(",", 1)
 print(split_limit)
 
 
 # FILE OPERATIONS
 
 # WRITE A FILE
-file = open('helloFile.txt', 'w')
+file = open('helloFile.txt', 'w+')
 file.write('I want eat pizza')
 file.close()
 # READ A FILE
-file = open('helloFile.txt', 'r')
+file = open('helloFile.txt', 'r+')
 content = file.read()
 print(content)
 file.close()

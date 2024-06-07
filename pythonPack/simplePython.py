@@ -58,7 +58,7 @@ for numbers in range(0,2):
 for numbers in range(10,0, -1):
     print(f'this is second {numbers}')
 
-for numbers in range(0,10, 1):
+for numbers in range(0,10,4):
     print(f'this is third {numbers}')
 
 for numbers in range(0, 10, 2):
