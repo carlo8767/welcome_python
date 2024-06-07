@@ -19,6 +19,13 @@ while count < 5:
 print(set_number)
 
 
+# CONVERT LIST INTO A STRING
+
+list_number = ["1","2","3"]
+list_string_number = ','.join(list_number)
+print(list_string_number)
+
+
 
 # SPLIT FUNCTION
 
