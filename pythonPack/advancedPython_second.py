@@ -4,13 +4,14 @@ import os
 class decorator:
     #  with *args you can
     # pass an unspecified number of arguments
+    # automatically converts
 
     def test_args_args(self, Firstargs, SecondArgs, ThirdArgs):
         print(Firstargs)
         print(SecondArgs)
         print(ThirdArgs)
 
-    # with  you can  keyword variable length**
+        # with keyword  parameters in the form a Dictionary**
     # pass an unspecified number of arguments
     def test_args_kwargs(self, FirstArgs, SecondArgs, ThirdArgs):
         print("FirstArgs:",FirstArgs)
@@ -73,7 +74,7 @@ b = 20
 a, b = b, a
 print(a, b)
 
-# PRINT TWO TIMES
+# PRINT THREE TIMES
 tiny_list = ["one"]
 print(tiny_list * 3)
 
