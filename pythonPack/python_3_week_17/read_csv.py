@@ -9,3 +9,5 @@ with Path("grades.csv").open("r") as f:
         for i, v in enumerate(i) :
             print(float(v))
 
+
+
