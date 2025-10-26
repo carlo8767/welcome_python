@@ -393,38 +393,50 @@ class Traceroute(ICMPPing):
         # I NEED TO SET UP THE ICMP HEADER TYPE, CODE, CHECKSUM
         # sudo python3 NetworkApplications.py traceroute -p icmp lancs.ac.uk
         # sudo python3 -m pdb NetworkApplications.py traceroute -p icmp lancs.ac.uk
+        seq_num = 0
         rtts = dict()
         hop_addrs = dict()
         pkt_keys = []
         packetID = random.randint(1, 65535)
-        # BUILD THE PACKET
-        header = struct.pack('!BBHHH', ICMP_ECHO_REQUEST, 0, 0, packetID, 48)
+        # set TTL on socket for this hop UNDERSTAND WHAT IS DOINT
+        self.icmpSocket.setsockopt(socket.SOL_IP, socket.IP_TTL, ttl)
 
-        # 2. Checksum ICMP packet using given function
-        # include some bytes 'AAA...' in the data (payload) of ping
-        data = str.encode(48 * 'A')
-        my_checksum = self.checksum(header + data)
-        packet = header+data
-        verify = self.dstAddress
-        dstPort = 33439
-        # print('%s traceroute CARLO to: %s (%s) ...' % (args.protocol, args.hostname, verify))
+        #
+        # print('%s traceroute CA RLO to: %s (%s) ...' % (args.protocol, args.hostname, verify))
         # it SHOULD PRINT 56
+
         for _ in range(3):
-         timeSent = time.time()
-         receive = self.icmpSocket.sendto(packet, (self.dstAddress,0))
+             seq_num += 1
+             # BUILD THE PACKET
+             header = struct.pack('!BBHHH', ICMP_ECHO_REQUEST, 0, 0, packetID, seq_num)
 
-         trReplyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
-         if trReplyPacket is None:
-             continue
-         icmpType = self.parseICMPTracerouteResponse(trReplyPacket)
-         # 5. Check if we reached the destination
-         if self.dstAddress == hopAddr and icmpType == 3:
-             self.isDestinationReached = True
+            # 2. Checksum ICMP packet using given function
+            # include some bytes 'AAA...' in the data (payload) of ping
+             data = str.encode(48 * 'A')
+             my_checksum = self.checksum(header + data)
+             header = struct.pack('!BBHHH', ICMP_ECHO_REQUEST, 0, my_checksum, packetID, seq_num)
+             packet = header + data
+             timeSent = time.time()
+             receive = self.icmpSocket.sendto(packet, (self.dstAddress,0))
 
+             trReplyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
+             # RECORD THE PACKET
+             pkt_keys.append(seq_num)
+             if trReplyPacket is None:
+                 continue
+             icmpType, src_ip = self.parseICMPTracerouteResponse(trReplyPacket)
+             # 5. Check if we reached the destination
+             if self.dstAddress == hopAddr and icmpType == 0:
+                 self.isDestinationReached = True
+                 # 6. If the response matches the request, record the rtt and the hop address
+                 # type, code, identifier, and sequence number THIS IDENTITY A PACKET SEQUENCE IS THE MAP
+                 rtts[seq_num] = timeRecvd - timeSent
+                 hop_addrs[seq_num] = hopAddr
 
-
-         # 7. Print one line of the results for the 3 probes
+         # 7. Print one line of the results for the 3 probes PKT_KEYS arrive empty
         self.printMultipleResults(ttl, pkt_keys, hop_addrs, rtts, args.hostname)
+
+
 
 
     # Send 3 UDP traceroute probes per TTL and collect responses
@@ -511,7 +523,6 @@ class Traceroute(ICMPPing):
     # TODO: parse the response to the ICMP probe
     # CARLO 3 STEP
     def parseICMPTracerouteResponse(self, trReplyPacket):
-        def parseICMPTracerouteResponse(self, trReplyPacket):
             # 1. Parse the IP header (first 20 bytes minimum)
             ip_header = struct.unpack("!BBHHHBBH4s4s", trReplyPacket[:20])
 
@@ -538,7 +549,7 @@ class Traceroute(ICMPPing):
             src_ip = socket.inet_ntoa(ip_header[8])
 
             # 6. Return useful parsed info
-            return icmp_type
+            return icmp_type, src_ip
 
 
 
