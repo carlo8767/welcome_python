@@ -418,7 +418,6 @@ class Traceroute(ICMPPing):
              packet = header + data
              timeSent = time.time()
              receive = self.icmpSocket.sendto(packet, (self.dstAddress,0))
-
              trReplyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
              # RECORD THE PACKET
              pkt_keys.append(seq_num)
@@ -430,6 +429,10 @@ class Traceroute(ICMPPing):
                  self.isDestinationReached = True
                  # 6. If the response matches the request, record the rtt and the hop address
                  # type, code, identifier, and sequence number THIS IDENTITY A PACKET SEQUENCE IS THE MAP
+                 rtts[seq_num] = timeRecvd - timeSent
+                 hop_addrs[seq_num] = hopAddr
+             # print the intermediate hop
+             elif icmpType == 11:
                  rtts[seq_num] = timeRecvd - timeSent
                  hop_addrs[seq_num] = hopAddr
 
@@ -532,7 +535,6 @@ class Traceroute(ICMPPing):
             # 3. Extract outer ICMP header (8 bytes after IP header)
             icmp_header = trReplyPacket[ip_header_len:ip_header_len + 8]
             icmp_type, icmp_code, icmp_checksum, icmp_id, icmp_seq = struct.unpack("!BBHHH", icmp_header)
-
             # 4. Interpret ICMP type
             if icmp_type == 0:
                 icmp_desc = "Echo Reply (destination reached)"
@@ -568,7 +570,7 @@ class Traceroute(ICMPPing):
         # 2. Handler for timeout on receive
         except socket.timeout as e:
             timeReceipt = None
-
+        # CARLO HOP ADDRESS SHOULD BE A DICTIONARY
         # 3. Return the packet, hop address and the time of receipt
         return pkt, hopAddr, timeReceipt
 
