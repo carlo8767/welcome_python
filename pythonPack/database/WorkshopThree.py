@@ -3,14 +3,6 @@
 class TestJoin:
 
 
- def test_join (self):
-     studs = (('name', 'surname', 'dept'), {("Lisa", "Simpson", "Physics"),
-                                            ("Dennis", "Ritchie", "Computing")})
-     dpts = (('dept', 'HoD'), {("Mathematics", "Georg Cantor"),
-                               ("Computing", "Alan Turing"), ("Physics", "John S. Bell")})
-
-
-
 
 
   """"

@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import argparse
+import os
 import socket
 import sys
 import struct
@@ -17,8 +18,15 @@ ICMP_ECHO_REQUEST = 8
 MAX_DATA_RECV = 65535
 MAX_TTL = 30
 
-# https://docs.python.org/3/library/argparse.html
 
+"IMPROVE OUTPUT, 1, ,2 "
+
+
+
+
+
+"Improve the output"
+# https://docs.python.org/3/library/argparse.html
 
 def setupArgumentParser() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -418,6 +426,7 @@ class Traceroute(ICMPPing):
              packet = header + data
              timeSent = time.time()
              receive = self.icmpSocket.sendto(packet, (self.dstAddress,0))
+             # YIHENG
              trReplyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
              # RECORD THE PACKET
              pkt_keys.append(seq_num)
@@ -527,14 +536,16 @@ class Traceroute(ICMPPing):
     # CARLO 3 STEP
     def parseICMPTracerouteResponse(self, trReplyPacket):
             # 1. Parse the IP header (first 20 bytes minimum)
-            ip_header = struct.unpack("!BBHHHBBH4s4s", trReplyPacket[:20])
 
-            # 2. Compute IP header length in bytes
+            ip_header = struct.unpack("!BBHHHBBH4s4s", trReplyPacket[:20])
+            # #  the header contains (69, 192, 104, 40716, 0, 64, 1, 21790, b'\xc0\xa8\x02\x01', b'\xc0\xa8\x02Y')
+            # 2. Compute IP header length in bytes I BITWISE OPERATION = 1111
             ip_header_len = (ip_header[0] & 0x0F) * 4
 
             # 3. Extract outer ICMP header (8 bytes after IP header)
             icmp_header = trReplyPacket[ip_header_len:ip_header_len + 8]
             icmp_type, icmp_code, icmp_checksum, icmp_id, icmp_seq = struct.unpack("!BBHHH", icmp_header)
+            print("parse", icmp_type)
             # 4. Interpret ICMP type
             if icmp_type == 0:
                 icmp_desc = "Echo Reply (destination reached)"
@@ -549,14 +560,12 @@ class Traceroute(ICMPPing):
 
             # 5. Extract sender IP (source address from IP header)
             src_ip = socket.inet_ntoa(ip_header[8])
-
             # 6. Return useful parsed info
             return icmp_type, src_ip
 
 
 
     def receiveOneTraceRouteResponse(self):
-
         timeReceipt = None
         hopAddr = None
         pkt = None
@@ -592,75 +601,276 @@ class Traceroute(ICMPPing):
         udpSocket.close()
 
         return timeSent
-
-
+# I NEED TO PRINT THE SEQUENCE OR THE PACKE ID?
 # TODO: A multi-threaded traceroute implementation
 class MultiThreadedTraceRoute(Traceroute):
 
     def __init__(self, args):
+
+        self.args = args
+        self.ttl_flag = 0
+        # ICMP THREAD VARIABLE
+        self.pkt_keys_thread_send = dict()
+        self.seq_num_packet = 0
+        self.packet_id = os.getpid() & 0xFFFF
+        self.packet_received_ready = dict()
+
+        # UDP VARIABLE
+        self.udp_send_packt = dict()
+        self.udp_received_packet = dict()
+        self.dstPort_base = 33439
         # 1. Initialise instance variables (add others if needed)
+
+        try:
+            self.dstAddress = socket.gethostbyname(args.hostname)
+
+            # socket.getaddrinfo(args.hostname, None, socket.AF_INET6)
+        except socket.gaierror:
+            print('Invalid hostname: ', args.hostname)
+            return
+        print('%s traceroute to: %s (%s) ...' % (args.protocol, args.hostname, self.dstAddress))
+
+        # 2. Initialise instance variables
+        self.isDestinationReached = False
+
+        # 3. Create a raw socket bound to ICMP protocol
+        self.icmpSocket = None
+        try:
+            self.icmpSocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
+        except socket.error as err:
+            traceback.print_exception(err)
+            exit(1)
+        # CARLO
+        # 4. Set a timeout on the socket
+        self.icmpSocket.settimeout(args.timeout)
         args.protocol = args.protocol.lower()
         self.timeout = args.timeout
-        self.send_complete = threading.Event()
+
+        # THREAD
         # NOTE you must use a lock when accessing data shared between the two threads
         self.lock = threading.Lock()
-
         # 2. Create a thread to send probes CARLO
-        self.send_thread = threading.Thread(target=self.send_probes)
 
         # 3. Create a thread to receive responses
-        self.recv_thread = threading.Thread(target=self.receive_responses)
 
+         # I WANT TO MODIFY BECAUSE OTHERWSIE IS RUN IN PARALLEL
         # 4. Start the threads
-        self.send_thread.start()
-        self.recv_thread.start()
+
+        if args.protocol == "icmp":
+            print("ICMP BEGIN")
+            self.send_complete = threading.Event()
+            self.receiving_complete = threading.Event()
+            self.send_thread = threading.Thread(target=self.send_probes)
+            self.recv_thread = threading.Thread(target=self.receive_responses)
+            self.print_thread = threading.Thread(target=self.print_packet)
+            self.send_thread.start()
+            self.recv_thread.start()
+            self.print_thread.start()
+            self.send_thread.join()
+            self.recv_thread.join()
+            self.print_thread.join()
+
+        elif args.protocol == "udp":
+        # UDP PART
+            print("UDP BEGIN")
+            self.receivedUpd_complete =  threading.Event()
+            self.send_complete = threading.Event()
+            self.send_thread = threading.Thread(target=self.send_probes)
+            self.recv_thread_udp = threading.Thread(target=self.receieveUdpThread)
+            self.print_thread_udp = threading.Thread(target=self.print_result_udp)
+            self.send_thread.start()
+            self.recv_thread_udp.start()
+            self.print_thread_udp.start()
+            self.send_thread.join()
+            self.recv_thread_udp.join()
+            self.print_thread_udp.join()
 
         # 5. Wait until both threads are finished executing
-        self.send_thread.join()
-        self.recv_thread.join()
 
         #  6. TODO Print results
+       # def printMultipleResults(self, ttl: int, pkt_keys: list, hop_addrs: dict, rtts: dict, destinationHostname=''):
+        # 6. Close ICMP socket
+        self.icmpSocket.close()
 
-    # Thread to send probes (to be implemented, a skeleton is provided)
+        # Thread to send probes (to be implemented, a skeleton is provided)
     def send_probes(self):
-        # TIme to live CARLO PAGE 166
         ttl = 1
-        while ttl <= MAX_TTL:
+        while  ttl <= MAX_TTL:
             # Send three probes per TTL
+            # PIPPO UPDATE TTL
             for _ in range(3):
                 if args.protocol == "icmp":
-
-                    pass  # TODO: Remove this once this method is implemented
-
+                 self.sendIcmpProbessThread(ttl)
                 elif args.protocol == "udp":
-                    pass  # TODO: Remove this once this method is implemented
+                    self.sendUdpProbesThread(ttl)
 
-                # Sleep for a short period between sending probes
+                # Sleep for a short period between sending probes IT WORK UNTIL ITS NOT FINISH
                 time.sleep(0.05)  # Small delay between probes
-
-            ttl += 1
-
+            ttl+=1
         # A final sleep before notifying the receive thread to exit
-        time.sleep(args.timeout)
-        # Notify the other thread that sending is complete
-        self.send_complete.set()
+        # time.sleep(args.timeout)
+        # Notify the other thread that sending is complete IT WILL PRINT UNTIL IS NOT FINISH
+        print("COMPLETE!!")
+        with self.lock:
+            self.send_complete.set()
+        # BEFORE RETURN VERIFY THAT YOU RECEIVE THE ANSWER
+        # I NEED TO PRINT THE SEQUENCE ID OR
+        # TODO: send 3 ICMP traceroute probes per TTL and collect responses
 
-        pass  # TODO: Remove this once this method is implemented
+        # Send 3 UDP traceroute probes per TTL and collect responses
+    def sendUdpProbesThread(self, ttl):
+        self.ttl_flag += 1
+        numBytes = 52
+        # 1. Send one UDP traceroute probe
 
-    # Thread to receive responses (to be implemented, a skeleton is provided)
+        dstPort = self.dstPort_base
+        timeSent = self.sendOneUdpProbe(self.dstAddress, dstPort, ttl, numBytes)
+        # STORE PACKET INFO
+        with self.lock:
+            self.udp_send_packt[dstPort] = (timeSent, dstPort,   self.ttl_flag, numBytes)
+            self.dstPort_base += 1
+
+
+    def receieveUdpThread(self):
+        while not (self.send_complete.is_set() and not self.udp_send_packt):
+            list_udp_pkt = list()
+            trReplyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
+            if trReplyPacket is None:
+                # VERIFY THERE IS MORE SMARt
+                self.receivedUpd_complete.set()
+                break
+                    # 4. Extract destination port from the reply
+
+            dstPortReceived, icmpType = self.parseUDPTracerouteResponse(trReplyPacket)
+                    # I NEED TO EXTRACT FROM THE RECEICED THE PORT KEY ARRIVE OTHERWISE DOESN NOT MATCH
+            if dstPortReceived not in self.udp_send_packt:
+                        continue
+            timeSent, dstPort, ttl, numBytes = self.udp_send_packt.pop(dstPortReceived)
+            list_udp_pkt.append(dstPort)
+            time_collect = timeRecvd - timeSent
+            self.udp_received_packet[dstPort] = (list_udp_pkt,time_collect,dstPort, hopAddr,ttl,dstPortReceived,icmpType)
+
+
+    def print_result_udp(self):
+        self.receivedUpd_complete.wait()
+        with self.lock:
+            hop_addrs= dict()
+            rtts = dict()
+            for key, values in self.udp_received_packet.items():
+                list_udp_pkt,time_collect,dstPort, hopAddr,ttl,dstPortReceived,icmpType = self.udp_received_packet[key]
+                # 5. Check if we reached the destination
+                if self.dstAddress == hopAddr and icmpType == 3:
+                    rtts[dstPort] = time_collect
+                    hop_addrs[dstPort] = hopAddr
+                    self.isDestinationReached = True
+                if dstPort == dstPortReceived:
+                    rtts[dstPort] = time_collect
+                    hop_addrs[dstPort] = hopAddr
+                # 7. Print one line of the results for the 3 probes
+                self.printMultipleResults(ttl, list_udp_pkt, hop_addrs, rtts, args.hostname)
+
+    # ICMP THREAD
+    def sendIcmpProbessThread(self, ttl):
+        self.ttl_flag +=1
+        self.icmpSocket.setsockopt(socket.SOL_IP, socket.IP_TTL,  ttl )
+        seq_num =  self.seq_num_packet
+        packet_id =  self.packet_id
+        # BUILD THE PACKET
+        header = struct.pack('!BBHHH', ICMP_ECHO_REQUEST, 0, 0, packet_id, seq_num)
+        # 2. Checksum ICMP packet using given function
+        # include some bytes 'AAA...' in the data (payload) of ping
+        data = str.encode(48 * 'A')
+        checksum = self.checksum(header + data)
+        header = struct.pack('!BBHHH', ICMP_ECHO_REQUEST, 0, checksum, packet_id, seq_num)
+        packet = header + data
+        send_time = time.time()
+        self.icmpSocket.sendto(packet, (self.dstAddress, 0))
+        # COLLECT THE SEQUENCE OF THE SEND PACKET
+        # Record which packet was sent and when
+        with self.lock:
+            # TTL and SEND TIME
+            self.pkt_keys_thread_send[seq_num] = (packet_id, send_time ,self.ttl_flag)
+            self.seq_num_packet += 1
+    # Thread to receive responses (to be implemented, a skeleton is provided) # THIS IS CONTINUE LISTENING
     def receive_responses(self):
+            # 🧩 Exit if sending is done AND no packets left
+            while not (self.send_complete.is_set() and not self.pkt_keys_thread_send):
+                list_pkt = []
+                if args.protocol == "icmp" :
+                    try:
+                        replyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
 
-        # Keep receiving responses until notified by the other thread
-        while not self.send_complete.is_set():
+                        # PKT KEY, MATCH SEQUENCE NUMBER
+                    except socket.timeout:
+                        continue  # no response, keep waiting
+                    if not replyPacket: # BREAK IF YOU DO NOT HAVE ANSWER
+                        self.receiving_complete.set()
+                        print("COMPLETE RECEIVING")
+                        break
+                    icm_code, src_ip, icmp_id, icmp_seq  = self.parseICMPTracerouteResponseThread(replyPacket)
+                    # Determine which probe this reply matches
+                    with self.lock:
+                        if icmp_seq not in self.pkt_keys_thread_send:
+                            continue
+                        if self.pkt_keys_thread_send:
+                            # REMOVE THE PACKET THAT YOU HAVE RECEIVED
+                                id_packet, send_time, ttl = self.pkt_keys_thread_send.pop(icmp_seq)
+                                list_pkt.append(id_packet)
+                            # OUT THE QUEUE AND READY TO PRINT
+                        else:
+                            continue
+                    rtt = timeRecvd - send_time
+                    with self.lock:
+                        self.packet_received_ready[icmp_seq] = (src_ip, icm_code, ttl, list_pkt, id_packet, hopAddr, rtt, args.hostname)
+                elif args.protocol == "udp":
+                    # Placeholder for future UDP logic
+                    continue
 
-            if args.protocol == "icmp":
-                pass  # TODO: Remove this once this method is implemented
 
-            elif args.protocol == "udp":
-                pass  # TODO: Remove this once this method is implemented
+    def print_packet(self):
+        self.receiving_complete.wait()
+        print("ENTER IN PRINT PACKET")
+        with self.lock:
+                rtts_thread = dict()
+                hop_addrs_thread = dict()
+                for key, values in self.packet_received_ready.items():
+                    src_ip, icm_code, ttl, list_pkt, id_packet, hop_address, rtt, hosting_names = self.packet_received_ready[key]
+                    if src_ip == self.dstAddress and icm_code == 0:
+                            self.isDestinationReached = True
+                            rtts_thread[id_packet] = rtt
+                            hop_addrs_thread[id_packet] = hop_address
+                    elif icm_code == 11:
+                            rtts_thread[id_packet] = rtt
+                            hop_addrs_thread[id_packet] = hop_address
+                    self.printMultipleResults(ttl, list_pkt, hop_addrs_thread,
+                                              rtts_thread, hosting_names)
+    # TODO: parse the response to the ICMP probe
+    # CARLO 3 STEP
+    def parseICMPTracerouteResponseThread(self, trReplyPacket):
+        # Outer IP header
+        ip_header = struct.unpack("!BBHHHBBH4s4s", trReplyPacket[:20])
+        #  the header contains (69, 192, 104, 40716, 0, 64, 1, 21790, b'\xc0\xa8\x02\x01', b'\xc0\xa8\x02Y')
+        # CALCULATION IP HEADER SIZE OFFSET
+        ip_header_len = (ip_header[0] & 0x0F) * 4
+        src_ip = socket.inet_ntoa(ip_header[8])
 
-        pass  # TODO: Remove this once this method is implemented
+        # Outer ICMP header
+        icmp_type, icmp_code, _,_,_ = struct.unpack("!BBHHH", trReplyPacket[ip_header_len:ip_header_len + 8])
 
+        orig_id = orig_seq = None
+
+        if icmp_type in (11, 3):  # Time Exceeded or Dest Unreachable
+            inner_ip_offset = ip_header_len + 8 # SEPARATE THE IP HEADER AND THE ICMP HEADER
+            inner_ip_header = struct.unpack("!BBHHHBBH4s4s", trReplyPacket[inner_ip_offset:inner_ip_offset + 20])
+            inner_ip_len = (inner_ip_header[0] & 0x0F) * 4
+
+            # Inner ICMP Echo Request header (original)
+            inner_icmp_offset = inner_ip_offset + inner_ip_len
+            _, _, _, orig_id, orig_seq = struct.unpack("!BBHHH", trReplyPacket[inner_icmp_offset:inner_icmp_offset + 8])
+
+        elif icmp_type == 0:  # Echo Reply
+            _, _, _, orig_id, orig_seq = struct.unpack("!BBHHH", trReplyPacket[ip_header_len:ip_header_len + 8])
+        return icmp_type, src_ip, orig_id, orig_seq
 
 # A basic multi-threaded web server implementation
 
@@ -764,5 +974,54 @@ Some useful ones to remember are:
         # sudo python3 -m pdb NetworkApplications.py traceroute -p icmp lancs.ac.uk
 
 
+    # Thread to receive responses (to be implemented, a skeleton is provided) # THIS IS CONTINUE LISTENING
+    def receive_responses(self):
+
+            hop_addrs_thread = dict()
+            rtts_thread = dict()
+            # 🧩 Exit if sending is done AND no packets left
+            while not (self.send_complete.is_set() and not self.pkt_keys_thread_send):
+                list_pkt = []
+                if args.protocol == "icmp" :
+                    try:
+                        replyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
+
+                        # PKT KEY, MATCH SEQUENCE NUMBER
+                    except socket.timeout:
+                        continue  # no response, keep waiting
+                    if not replyPacket: # BREAK IF YOU DO NOT HAVE ANSWER
+                        self.receiving_complete.set()
+                        break
+                    icm_code, src_ip, icmp_id, icmp_seq  = self.parseICMPTracerouteResponseThread(replyPacket)
+                    # Determine which probe this reply matches
+                    with self.lock:
+                        if icmp_seq not in self.pkt_keys_thread_send:
+                            continue
+                        if self.pkt_keys_thread_send:
+                                id_packet, send_time, ttl = self.pkt_keys_thread_send.pop(icmp_seq)
+                                list_pkt.append(id_packet)
+                            # OUT THE QUEUE AND READY TO PRINT
+                        else:
+                            continue
+                    rtt = timeRecvd - send_time
+                    with self.lock:
+                        self.packet_received_ready[icmp_seq] = (ttl, list_pkt, hop_addrs_thread, rtt, args.hostname)
+                    # Stop if destination reached
+                    if src_ip == self.dstAddress and icm_code == 0:
+                        with self.lock:
+                            self.isDestinationReached = True
+                            hop_addrs_thread [id_packet] = hopAddr
+                            rtts_thread[id_packet] = rtt
+                    elif icm_code == 11:
+                        with self.lock:
+                            hop_addrs_thread[id_packet] = hopAddr
+                            rtts_thread[id_packet] = rtt
+                    with self.lock:
+                      #  print("PRINT YIHENG")
+                      self.printMultipleResults(ttl, list_pkt , hop_addrs_thread,
+                                                 rtts_thread, args.hostname)
+                elif args.protocol == "udp":
+                    # Placeholder for future UDP logic
+                    continue
 
 """
