@@ -976,7 +976,7 @@ class WebServer(NetworkApplication):
 
     def __init__(self, args,stop_web_server_proxy ):
 
-        self.path_store = "./cache_page/cache.txt"
+        self.path_store = "cache_page/index.txt"
         self.path_store_timeStamp = "./cache_page/time_stamp.txt"
         self.port_web_server = 8081
         self.connection_web_server = ""
@@ -1059,7 +1059,7 @@ class Proxy(NetworkApplication):
 
     def __init__(self, args):
         print('Proxy starting on port: %i...' % (8000))
-        self.path = "./cache_page/cache.txt"
+        self.path = "./cache_page"
         self.args = args
         self.stop_web_server_proxy = threading.Event()
         server_socket_proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1094,10 +1094,19 @@ class Proxy(NetworkApplication):
 
         # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
 
-    def reading_cache (self, path):
-        with open(path, 'rb') as r:
-            content = r.read()
-            print("The content is ", content)
+    def reading_cache (self,path ):
+        print("THE PATH IS ", path)
+        content = b''
+        try:
+            with open(path, 'rb') as r:
+                content = r.read()
+                print("The content is ", content)
+        except FileNotFoundError:
+            print("FILE NOT FOUND ")
+            with open(path, 'wb') as w:
+
+                w.write(content)
+                print("wFILE NOT FOUND")
         return  content
 
     def writing_in_cache(self,path, data_receive):
@@ -1112,14 +1121,19 @@ class Proxy(NetworkApplication):
 
     def handleRequest_request_proxy(self, connection_socket_proxy):
         try:
+
             # PIPPO
             print("ARRVE MESSAGE")
             message = connection_socket_proxy.recv(MAX_DATA_RECV).decode()
+
+            name_file = message.split()[1]
+            name_file = name_file.replace("html", "txt")
             # 1. READ THE CACHE
             print("ARRIVE READING")
-            cache_present = self.reading_cache(self.path)
+            cache_present = self.reading_cache(self.path+name_file)
 
-            if cache_present.strip() == "":
+            if cache_present.decode() == "":
+                print("ARRIVE EMPTY")
                 # CALL THE SERVER
                 print("Call Web Server")
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as ws_sock:
@@ -1128,11 +1142,10 @@ class Proxy(NetworkApplication):
                     ws_sock.sendall(message.encode())
                     # 3. Receive response
                     response_content = ws_sock.recv(MAX_DATA_RECV)
-                    print(f'the response type is {type(response_content)}')
                  # 4. Forward response to client
                     print("SEND THE REQUEST BACK")
                     # WRITE THE CACHE
-                    self.writing_in_cache(self.path, response_content)
+                    self.writing_in_cache(self.path+name_file, response_content)
                     response = b'HTTP/1.1 200 OK\r\n\r\n'
                     print("FINISH WRITING")
                     response += response_content
@@ -1189,7 +1202,8 @@ Some useful ones to remember are:
 
     # Thread to receive responses (to be implemented, a skeleton is provided) # THIS IS CONTINUE LISTENING
     def receive_responses(self):
-
+    # HOW LONG IN THE MEMORY
+    # WHAT IS THE BEHAVE ASPECT WHEN THE PAGE REQUEST IS DIFFERENT ?
 sudo python3 NetworkApplications.py mtroute -p icmp lancs.ac.uk
 UNDERSTAND WHAT YOU CAN RECEIVE PAGE HTML
 
