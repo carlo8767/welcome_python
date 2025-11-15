@@ -22,6 +22,11 @@ class VerifyThread:
             time.sleep(0.5)
 
 if __name__ == "__main__":
+
+    strings  = ""
+    if strings:
+        print("ooo", strings)
+
     ts = threading.Lock
     o = VerifyThread()
     # FLAG

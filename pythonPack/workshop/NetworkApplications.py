@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import argparse
-import os
+
 import socket
 import sys
 import struct
@@ -838,6 +838,8 @@ class MultiThreadedTraceRoute(Traceroute):
                             # MODIFY CARLO THhere is STILL A BUG
                      else:
                         packet_id, seq_num_probes, send_time, ttl = self.pkt_keys_thread_send.pop((icmp_id,icmp_seq))
+                        # STORE PKT APPEND HERE OF THE REQUEST NOT ARRIVE
+                        # VERIFY ORDER TTL
                         list_pkt.append((packet_id,seq_num_probes))
                         # OUT THE QUEUE AND READY TO PRINT
                         rtt = timeRecvd - send_time
@@ -882,7 +884,7 @@ class MultiThreadedTraceRoute(Traceroute):
                     rtts_thread[key] = rtt
                     hop_addrs_thread[key] = hop_address
             count_loop -=1
-            self.printMultipleResults_Thread(ttl, list_pkt, hop_addrs_thread,
+            self.printMultipleResults(ttl, list_pkt, hop_addrs_thread,
                                    rtts_thread, hosting_names)
             if ttl_loop:
                 ttl_loop = False
@@ -972,45 +974,80 @@ class MultiThreadedTraceRoute(Traceroute):
 # and copied to the folder where you run this code
 class WebServer(NetworkApplication):
 
-    def __init__(self, args):
+    def __init__(self, args,stop_web_server_proxy ):
+
+        self.path_store = "./cache_page/cache.txt"
+        self.path_store_timeStamp = "./cache_page/time_stamp.txt"
+        self.port_web_server = 8880
+        self.connection_web_server = ""
+        self.stop_event = stop_web_server_proxy
         print('Web Server starting on port: %i...' % args.port)
 
         # 1. Create a TCP socket
-        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # 2. Bind the TCP socket to server address and server port
-        serverSocket.bind(("", args.port))
-
+        server_socket.bind(("", args.port))
         # 3. Continuously listen for connections to server socket
-        serverSocket.listen(100)
+        server_socket.listen(100)
         print("Server listening on port", args.port)
 
-        while True:
-            # 4. Accept incoming connections
-            connectionSocket, addr = serverSocket.accept()
-            print(f"Connection established with {addr}")
+        try:
+            while not self.stop_event.is_set():
+                try:
+                    # 4. Accept incoming connections connection socket_repressent the conncetion
+                    connection_socket, addr = server_socket.accept()
+                    print(f"Connection established with {addr}")
+                except OSError:
+                        break
+                # MANAGE THE CONNECTION THE PROXI
+                self.connection_web_server = connection_socket
+                # 5. Create a new thread to handle each client request
+                thread_web_server = threading.Thread(target=self.handleRequest, args=(connection_socket,), daemon=True)
+                thread_web_server.start()
+        except Exception as e:
+            print(f"Error web server handling request: {e}")
+        finally:
+            server_socket.close()
 
             # 5. Create a new thread to handle each client request
-            threading.Thread(target=self.handleRequest, args=(connectionSocket,)).start()
 
         # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
-        serverSocket.close()
+
+    def writing_file (self, path, cont):
+        with open(path, 'w') as w:
+            print("I write")
+            # ADD THE EXPIRATION DATE
+            # ADD WHEN IT ARRIVES
+            w.write(str(cont))
+
 
     def handleRequest(self, connectionSocket):
         try:
+            """
+             socket.share(process_id)
+            https://docs.python.org/3/library/socket.html#socket.socket.send
+                sudo python3 NetworkApplications.py proxy -p 8000
+                 sudo python3 NetworkApplications.py web -p 8080
+            """
             # 1. Receive request message from the client
+            # WHAT YOU TEST ?
             message = connectionSocket.recv(MAX_DATA_RECV).decode()
-
+            print(f'the content is {message}')
+            print(f'the type is {type(message)}')
             # 2. Extract the path of the requested object from the message (second part of the HTTP header)
             filename = message.split()[1]
-
+            print(f'the filename is {filename}')
             # 3. Read the corresponding file from disk
             with open(filename[1:], 'r') as f:  # Skip the leading '/'
                 content = f.read()
 
+            self.writing_file(self.path_store, content+ time.time())
+
+
             # 4. Create the HTTP response
             response = 'HTTP/1.1 200 OK\r\n\r\n'
             response += content
+            print(f'the response is {response}')
 
             # 5. Send the content of the file to the socket
             connectionSocket.send(response.encode())
@@ -1022,20 +1059,88 @@ class WebServer(NetworkApplication):
             connectionSocket.send(error_response.encode())
 
         except Exception as e:
-            print(f"Error handling request: {e}")
+            print(f"Error proxi handling request: {e}")
 
         finally:
             # Close the connection socket
             connectionSocket.close()
 
 
+
+
 #  TODO: A proxy implementation
 class Proxy(NetworkApplication):
 
     def __init__(self, args):
-        print('Web Proxy starting on port: %i...' % (args.port))
+        print('Proxy starting on port: %i...' % (8000))
+        self.path = "./cache_page/cache.txt"
+        self.args = args
+        self.stop_web_server_proxy = threading.Event()
 
-        pass  # TODO: Remove this once this method is implemented
+        server_socket_proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket_proxy.bind(("", 8000))
+        server_socket_proxy.listen(100)
+        print("Server proxy listening on port", 8000)
+
+
+        # START UP WEB SERVER
+        web_server_thread = threading.Thread(target=WebServer, args=(args,self.stop_web_server_proxy), daemon=True)
+        web_server_thread.start()
+
+        try:
+            while not self.stop_web_server_proxy.is_set():
+                try:
+                    # ACCEPT INCOMING REQUEST
+                    connection_socket_proxy, addr_proxy = server_socket_proxy.accept()
+
+                except OSError:
+                    break
+                # CREATE A NEW THREAD FOR EVERY CLIENT REQUEST
+                print(f"Connection established with {addr_proxy}")
+                proxy_thread = threading.Thread(target=self.handleRequest_request_proxy,
+                                                args=(connection_socket_proxy, self.stop_web_server_proxy), daemon=True)
+                proxy_thread.start()
+        except Exception as e :
+            print(f"Error proxy request: {e}")
+        finally:
+
+            server_socket_proxy.close()
+
+        # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
+
+    def reading_cache (self, path):
+        with(open(path)) as r:
+            content = r.read()
+            print("The content is ", content)
+        return  content
+
+
+    def handleRequest_request_proxy(self, connection_socket_proxy):
+        try:
+            # PIPPO
+
+            # 1. READ THE CACHE
+            cache_present = self.reading_cache(self.path)
+            if cache_present.strip() == "":
+                pass
+            else:
+                response = 'HTTP/1.1 200 OK\r\n\r\n'
+                response += cache_present
+                connection_socket_proxy.send(response.encode())
+
+        except IOError:
+            # Handle file not found error
+            error_response = "HTTP/1.1 404 Not Found\r\n\r\n"
+            error_response += "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"
+            connection_socket_proxy.send(error_response.encode())
+
+        except Exception as e:
+            print(f"Error handling request: {e}")
+
+        finally:
+            # Close the connection socket
+            connection_socket_proxy.close()
+
 
 
 # NOTE: Do NOT delete the code below
@@ -1068,51 +1173,9 @@ Some useful ones to remember are:
     # Thread to receive responses (to be implemented, a skeleton is provided) # THIS IS CONTINUE LISTENING
     def receive_responses(self):
 
-            hop_addrs_thread = dict()
-            rtts_thread = dict()
-            # 🧩 Exit if sending is done AND no packets left
-            while not (self.send_complete.is_set() and not self.pkt_keys_thread_send):
-                list_pkt = []
-                if args.protocol == "icmp" :
-                    try:
-                        replyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
-
-                        # PKT KEY, MATCH SEQUENCE NUMBER
-                    except socket.timeout:
-                        continue  # no response, keep waiting
-                    if not replyPacket: # BREAK IF YOU DO NOT HAVE ANSWER
-                        self.receiving_complete.set()
-                        break
-                    icm_code, src_ip, icmp_id, icmp_seq  = self.parseICMPTracerouteResponseThread(replyPacket)
-                    # Determine which probe this reply matches
-                    with self.lock:
-                        if icmp_seq not in self.pkt_keys_thread_send:
-                            continue
-                        if self.pkt_keys_thread_send:
-                                id_packet, send_time, ttl = self.pkt_keys_thread_send.pop(icmp_seq)
-                                list_pkt.append(id_packet)
-                            # OUT THE QUEUE AND READY TO PRINT
-                        else:
-                            continue
-                    rtt = timeRecvd - send_time
-                    with self.lock:
-                        self.packet_received_ready[icmp_seq] = (ttl, list_pkt, hop_addrs_thread, rtt, args.hostname)
-                    # Stop if destination reached
-                    if src_ip == self.dstAddress and icm_code == 0:
-                        with self.lock:
-                            self.isDestinationReached = True
-                            hop_addrs_thread [id_packet] = hopAddr
-                            rtts_thread[id_packet] = rtt
-                    elif icm_code == 11:
-                        with self.lock:
-                            hop_addrs_thread[id_packet] = hopAddr
-                            rtts_thread[id_packet] = rtt
-                    with self.lock:
-                      #  print("PRINT YIHENG")
-                      self.printMultipleResults(ttl, list_pkt , hop_addrs_thread,
-                                                 rtts_thread, args.hostname)
-                elif args.protocol == "udp":
-                    # Placeholder for future UDP logic
-                    continue
 sudo python3 NetworkApplications.py mtroute -p icmp lancs.ac.uk
+UNDERSTAND WHAT YOU CAN RECEIVE PAGE HTML
+
+
+
 """
