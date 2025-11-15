@@ -978,18 +978,19 @@ class WebServer(NetworkApplication):
 
         self.path_store = "./cache_page/cache.txt"
         self.path_store_timeStamp = "./cache_page/time_stamp.txt"
-        self.port_web_server = 8880
+        self.port_web_server = 8081
         self.connection_web_server = ""
         self.stop_event = stop_web_server_proxy
-        print('Web Server starting on port: %i...' % args.port)
+        print('Web Server starting on port: %i...' % 8081)
 
         # 1. Create a TCP socket
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # 2. Bind the TCP socket to server address and server port
-        server_socket.bind(("", args.port))
+        server_socket.bind(("", 8081))
         # 3. Continuously listen for connections to server socket
         server_socket.listen(100)
-        print("Server listening on port", args.port)
+        print("Server listening on port", 8081)
 
         try:
             while not self.stop_event.is_set():
@@ -1009,19 +1010,7 @@ class WebServer(NetworkApplication):
         finally:
             server_socket.close()
 
-            # 5. Create a new thread to handle each client request
-
-        # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
-
-    def writing_file (self, path, cont):
-        with open(path, 'w') as w:
-            print("I write")
-            # ADD THE EXPIRATION DATE
-            # ADD WHEN IT ARRIVES
-            w.write(str(cont))
-
-
-    def handleRequest(self, connectionSocket):
+    def handleRequest(self, connection_socket):
         try:
             """
              socket.share(process_id)
@@ -1031,39 +1020,36 @@ class WebServer(NetworkApplication):
             """
             # 1. Receive request message from the client
             # WHAT YOU TEST ?
-            message = connectionSocket.recv(MAX_DATA_RECV).decode()
+
+            message = connection_socket.recv(MAX_DATA_RECV).decode()
             print(f'the content is {message}')
-            print(f'the type is {type(message)}')
             # 2. Extract the path of the requested object from the message (second part of the HTTP header)
             filename = message.split()[1]
-            print(f'the filename is {filename}')
             # 3. Read the corresponding file from disk
             with open(filename[1:], 'r') as f:  # Skip the leading '/'
                 content = f.read()
-
-            self.writing_file(self.path_store, content+ time.time())
-
-
             # 4. Create the HTTP response
-            response = 'HTTP/1.1 200 OK\r\n\r\n'
-            response += content
+            # response = 'HTTP/1.1 200 OK\r\n\r\n'
+            response = content
             print(f'the response is {response}')
 
             # 5. Send the content of the file to the socket
-            connectionSocket.send(response.encode())
+            connection_socket.sendall(response.encode())
 
         except IOError:
             # Handle file not found error
+            print("ERROR SERVER")
             error_response = "HTTP/1.1 404 Not Found\r\n\r\n"
             error_response += "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"
-            connectionSocket.send(error_response.encode())
+            connection_socket.send(error_response.encode())
 
         except Exception as e:
+            print("ERROR SERVER")
             print(f"Error proxi handling request: {e}")
 
         finally:
             # Close the connection socket
-            connectionSocket.close()
+            connection_socket.close()
 
 
 
@@ -1076,8 +1062,8 @@ class Proxy(NetworkApplication):
         self.path = "./cache_page/cache.txt"
         self.args = args
         self.stop_web_server_proxy = threading.Event()
-
         server_socket_proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket_proxy.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket_proxy.bind(("", 8000))
         server_socket_proxy.listen(100)
         print("Server proxy listening on port", 8000)
@@ -1098,7 +1084,7 @@ class Proxy(NetworkApplication):
                 # CREATE A NEW THREAD FOR EVERY CLIENT REQUEST
                 print(f"Connection established with {addr_proxy}")
                 proxy_thread = threading.Thread(target=self.handleRequest_request_proxy,
-                                                args=(connection_socket_proxy, self.stop_web_server_proxy), daemon=True)
+                                                args=(connection_socket_proxy,), daemon=True)
                 proxy_thread.start()
         except Exception as e :
             print(f"Error proxy request: {e}")
@@ -1109,27 +1095,58 @@ class Proxy(NetworkApplication):
         # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
 
     def reading_cache (self, path):
-        with(open(path)) as r:
+        with open(path, 'r') as r:
             content = r.read()
             print("The content is ", content)
         return  content
+
+    def writing_in_cache(self,path, data_receive):
+        try:
+            with open (path,'wb') as w:
+                w.write(data_receive)
+                print("Writing in ", data_receive)
+        except Exception as e:
+            print(f'error in writing {e}')
+
 
 
     def handleRequest_request_proxy(self, connection_socket_proxy):
         try:
             # PIPPO
-
+            print("ARRVE MESSAGE")
+            message = connection_socket_proxy.recv(MAX_DATA_RECV).decode()
             # 1. READ THE CACHE
+            print("ARRIVE READING")
             cache_present = self.reading_cache(self.path)
+
             if cache_present.strip() == "":
-                pass
+                # CALL THE SERVER
+                print("Call Web Server")
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as ws_sock:
+                    ws_sock.connect(("127.0.0.1", 8081))
+                    # 2. Send the message
+                    ws_sock.sendall(message.encode())
+                    # 3. Receive response
+                    response_content = ws_sock.recv(MAX_DATA_RECV)
+                    print(f'the response type is {type(response_content)}')
+                 # 4. Forward response to client
+                    print("SEND THE REQUEST BACK")
+                    # WRITE THE CACHE
+                    self.writing_in_cache(self.path, response_content)
+                    response = b'HTTP/1.1 200 OK\r\n\r\n'
+                    print("FINISH WRITING")
+                    response += response_content
+                connection_socket_proxy.sendall(response)
+
             else:
-                response = 'HTTP/1.1 200 OK\r\n\r\n'
-                response += cache_present
-                connection_socket_proxy.send(response.encode())
+
+                print("ELSE !!")
+                response = cache_present
+                connection_socket_proxy.send(response)
 
         except IOError:
             # Handle file not found error
+            print("ERROR PROXY")
             error_response = "HTTP/1.1 404 Not Found\r\n\r\n"
             error_response += "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"
             connection_socket_proxy.send(error_response.encode())
