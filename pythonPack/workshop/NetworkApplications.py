@@ -12,6 +12,8 @@ import random
 import traceback
 import threading
 
+import requests
+
 #  NOTE: Do NOT import other libraries!
 
 UDP_CODE = socket.IPPROTO_UDP
@@ -345,7 +347,7 @@ class ICMPPing(NetworkApplication):
         return rtt, ttl, packetSize, seq
 
 
-# A partially implemented traceroute UNDERSTAND THIS CARLO
+# A partially implemented traceroute UNDERSTAND THIS
 class Traceroute(ICMPPing):
 
     def __init__(self, args):
@@ -371,17 +373,17 @@ class Traceroute(ICMPPing):
         except socket.error as err:
             traceback.print_exception(err)
             exit(1)
-        # CARLO
+
         # 4. Set a timeout on the socket
         self.icmpSocket.settimeout(args.timeout)
 
-        # 5. Run traceroute CARLO
+        # 5. Run traceroute
         self.runTraceroute()
 
         # 6. Close ICMP socket
         self.icmpSocket.close()
 
-    # VERIFY CARLO
+    # VERIFY
     def runTraceroute(self):
         # CREATE ICMP
         hopAddr = None
@@ -391,7 +393,7 @@ class Traceroute(ICMPPing):
         ttl = 1
 
         while (ttl <= MAX_TTL and self.isDestinationReached == False):
-            # 1 STEP CARLO
+            # 1 STEP
             if args.protocol == "icmp":
                 self.sendIcmpProbesAndCollectResponses(ttl)
 
@@ -540,7 +542,7 @@ class Traceroute(ICMPPing):
         return dst_port, icmpType
 
     # TODO: parse the response to the ICMP probe
-    # CARLO 3 STEP
+    #  3 STEP
     def parseICMPTracerouteResponse(self, trReplyPacket):
             # 1. Parse the IP header (first 20 bytes minimum)
 
@@ -1011,6 +1013,7 @@ class WebServer(NetworkApplication):
         finally:
             server_socket.close()
 
+
     def handleRequest(self, connection_socket):
         try:
             """
@@ -1024,18 +1027,26 @@ class WebServer(NetworkApplication):
 
             message = connection_socket.recv(MAX_DATA_RECV).decode()
             print(f'the content is {message}')
+            # HERE THE ISSUE YIHENG
             # 2. Extract the path of the requested object from the message (second part of the HTTP header)
             filename = message.split()[1]
+
+            url = filename
+            response = requests.get(url)
+            data = response.content
+            print(f'THE FILE NAME IS {filename}')
+            print(f'this is the ANSWER {url}')
+            # print(f'THE FILE NAME IS {filename}')
             # 3. Read the corresponding file from disk
-            with open(filename[1:], 'r') as f:  # Skip the leading '/'
-                content = f.read()
+            # with open(filename[1:], 'r') as f:  # Skip the leading '/'
+               # content = f.read()
             # 4. Create the HTTP response
             # response = 'HTTP/1.1 200 OK\r\n\r\n'
-            response = content
-            print(f'the response is {response}')
+            # response = content
+            print(f'the response is {data}')
 
             # 5. Send the content of the file to the socket
-            connection_socket.sendall(response.encode())
+            connection_socket.sendall(data)
 
         except IOError:
             # Handle file not found error
@@ -1059,15 +1070,17 @@ class WebServer(NetworkApplication):
 class Proxy(NetworkApplication):
 
     def __init__(self, args):
-        print('Proxy starting on port: %i...' % (8000))
+        print('Proxy starting on port: %i...' % args.port)
         self.path = "./cache_page"
         self.args = args
         self.stop_web_server_proxy = threading.Event()
         server_socket_proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket_proxy.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket_proxy.bind(("", 8000))
+
+
+        server_socket_proxy.bind(("", args.port))
         server_socket_proxy.listen(100)
-        print("Server proxy listening on port", 8000)
+        print("Server proxy listening on port", args.port)
         self.server_memo_page = dict()
 
 
@@ -1097,10 +1110,23 @@ class Proxy(NetworkApplication):
             self.clear_cache_directory()
             server_socket_proxy.close()
 
+
+    def extracts_main_domain(sefl, url):
+        # Remove scheme if present
+        if "://" in url:
+            url = url.split("://", 1)[1]
+        url = url.split("/", 1)[0]
+        url = url.split(":", 1)[0]
+        parts = url.split(".")
+        if len(parts) >= 2:
+            final_result = "".join(parts[0:-1])
+            return final_result
+        return parts[0]
+
+
     def clear_cache_directory(self):
         if not os.path.isdir(self.path):
             return
-
         for filename in os.listdir(self.path):
             file_path = os.path.join(self.path, filename)
             try:
@@ -1109,9 +1135,9 @@ class Proxy(NetworkApplication):
                     print("Removed:", file_path)
             except Exception as e:
                 print("Error removing file:", file_path, e)
-        # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
 
-    def reading_cache (self,path ):
+
+    def reading_cache (self,path, name_file ):
         print("THE PATH IS ", path)
         content = b''
         try:
@@ -1142,13 +1168,15 @@ class Proxy(NetworkApplication):
             # PIPPO
             print("ARRVE MESSAGE")
             message = connection_socket_proxy.recv(MAX_DATA_RECV).decode()
-
-            name_file = message.split()[1]
-            name_file = name_file.replace("html", "txt")
+            name_file = self.extracts_main_domain(message)
+            print("SPLIT MESSAGE")
             self.server_memo_page[name_file]= b''
             # 1. READ THE CACHE
+            print(f'THE SPLIT CONTAINS {name_file}')
             print("ARRIVE READING")
-            cache_present = self.reading_cache(self.path+name_file)
+            search_file = self.path+"/"+name_file+".txt"
+            print(f'{search_file}')
+            cache_present = self.reading_cache(search_file, name_file)
 
             if  cache_present.decode() == "":
                 print("ARRIVE EMPTY")
@@ -1163,7 +1191,7 @@ class Proxy(NetworkApplication):
                  # 4. Forward response to client
                     print("SEND THE REQUEST BACK")
                     # WRITE THE CACHE
-                    self.writing_in_cache(self.path+name_file, response_content)
+                    self.writing_in_cache(search_file, response_content)
                     response = b'HTTP/1.1 200 OK\r\n\r\n'
                     print("FINISH WRITING")
                     response += response_content
@@ -1194,6 +1222,10 @@ class Proxy(NetworkApplication):
 
 # NOTE: Do NOT delete the code below
 if __name__ == "__main__":
+    name = "aa.com"
+    a = name.rsplit('.', 1)
+    a = a[0]
+
     args = setupArgumentParser()
     args.func(args)
 

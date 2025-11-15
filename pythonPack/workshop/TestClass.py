@@ -52,8 +52,41 @@ send_time = time.time()
         result_sending = socket_interface.sendto(server_destination)
         socket_interface.settimeout(2)
 
+    def extract_main_domain(sefl, url):
+        # Remove scheme if present
+        if "://" in url:
+            url = url.split("://", 1)[1]
 
+        # Remove path
+        url = url.split("/", 1)[0]
 
+        # Remove port if present
+        url = url.split(":", 1)[0]
+
+        # Split domain parts
+        parts = url.split(".")
+
+        # Return main domain (second-to-last part)
+        if len(parts) >= 2:
+
+            final_result = "".join(parts[0:-1])
+            return final_result
+        return parts[0]
+
+    def test_split (self):
+        content = 'GET http://neverssl.ss.tn.com/ HTTP/1.1Host: neverssl.comUser-Agent: curl/8.5.0Accept: */*Proxy-Connection: Keep-Alive'
+        pa = self.extract_main_domain(content)
+        assert pa == "neverssltn"
+        lines = content.splitlines()
+        filename = content.split()[1]
+        split_again = filename.rsplit(".", 1)[0]
+        split_final = split_again.split("//")[1]
+        # Find the line that starts with "Host:"
+        host_line = next((line for line in lines if line.startswith("Host:")), None)
+        # Extract the host value
+        if host_line:
+            host = host_line.split(":", 1)[1].strip()
+            print(host)
 
 
     def test_mtrace(self):
