@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import argparse
+import os
 
 import socket
 import sys
@@ -1067,6 +1068,7 @@ class Proxy(NetworkApplication):
         server_socket_proxy.bind(("", 8000))
         server_socket_proxy.listen(100)
         print("Server proxy listening on port", 8000)
+        self.server_memo_page = dict()
 
 
         # START UP WEB SERVER
@@ -1089,9 +1091,24 @@ class Proxy(NetworkApplication):
         except Exception as e :
             print(f"Error proxy request: {e}")
         finally:
-
+            # for n in self.server_memo_page.keys():
+              #  erase = b''
+               # self.writing_in_cache(self.path+n, erase)
+            self.clear_cache_directory()
             server_socket_proxy.close()
 
+    def clear_cache_directory(self):
+        if not os.path.isdir(self.path):
+            return
+
+        for filename in os.listdir(self.path):
+            file_path = os.path.join(self.path, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                    print("Removed:", file_path)
+            except Exception as e:
+                print("Error removing file:", file_path, e)
         # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
 
     def reading_cache (self,path ):
@@ -1128,11 +1145,12 @@ class Proxy(NetworkApplication):
 
             name_file = message.split()[1]
             name_file = name_file.replace("html", "txt")
+            self.server_memo_page[name_file]= b''
             # 1. READ THE CACHE
             print("ARRIVE READING")
             cache_present = self.reading_cache(self.path+name_file)
 
-            if cache_present.decode() == "":
+            if  cache_present.decode() == "":
                 print("ARRIVE EMPTY")
                 # CALL THE SERVER
                 print("Call Web Server")
@@ -1169,6 +1187,7 @@ class Proxy(NetworkApplication):
 
         finally:
             # Close the connection socket
+
             connection_socket_proxy.close()
 
 
@@ -1203,6 +1222,7 @@ Some useful ones to remember are:
     # Thread to receive responses (to be implemented, a skeleton is provided) # THIS IS CONTINUE LISTENING
     def receive_responses(self):
     # HOW LONG IN THE MEMORY
+    # SO I JUST UNE ONE FILE ?
     # WHAT IS THE BEHAVE ASPECT WHEN THE PAGE REQUEST IS DIFFERENT ?
 sudo python3 NetworkApplications.py mtroute -p icmp lancs.ac.uk
 UNDERSTAND WHAT YOU CAN RECEIVE PAGE HTML
