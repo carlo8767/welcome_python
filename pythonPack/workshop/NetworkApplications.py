@@ -1095,7 +1095,7 @@ class Proxy(NetworkApplication):
         # Close server socket (this would only happen if the loop was broken, which it isn't in this example)
 
     def reading_cache (self, path):
-        with open(path, 'r') as r:
+        with open(path, 'rb') as r:
             content = r.read()
             print("The content is ", content)
         return  content
@@ -1139,9 +1139,9 @@ class Proxy(NetworkApplication):
                 connection_socket_proxy.sendall(response)
 
             else:
-
                 print("ELSE !!")
-                response = cache_present
+                response = b'HTTP/1.1 200 OK\r\n\r\n'
+                response += cache_present
                 connection_socket_proxy.send(response)
 
         except IOError:
