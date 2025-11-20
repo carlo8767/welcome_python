@@ -1,47 +1,26 @@
 # You can edit this file but cannot import anything.
+# MESSAGE RESULT
+message_cartesian = "is CARTPROD"
+message_no_match = "NO MATCH CARTESIAN"
+
 
 def task0(relations):
     # input is a dictionary of relations; output is a list of message strings to be printed,
     # e.g. ["t17 is UNION of t7 and t15", "t11 is INTERSECTION of t2 and t3", "t24 is CARTPROD of t9 and t21"]
+    list_message = list()
+    # VERIFICATION CARTESIAN
+    list_message.append(verification_cartesian(relations))
 
-    print(f'The relation are... {relations}')
-    return []
-
+    return list_message
 def task1(): # returns a list of sqlite statements to create tables and populate them; 
     return []
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 """
 CALCULATION IF EXIST A CARTESIAN 
 A * B = C 
 """
 
-def verification_cartesian(dictionary_relation)-> bool:
+def verification_cartesian(dictionary_relation)-> str:
     # ITERATE OVER A SET OF LIST WITH INDEX
     list_tuple = list(dictionary_relation.values())
     dictionary_store_concat = dict()
@@ -69,13 +48,13 @@ def set_cartesian_product(set_tuple_one, set_tuple_two)-> set:
     return set_record
 
 # VERIFICATION IF THERE IS A CARTESIAN
-def find_occurrence_cartesian (dictionary_cartesian, original_dictionary)-> bool:
-    result = False
+def find_occurrence_cartesian (dictionary_cartesian, original_dictionary)-> str:
+    message = message_no_match
     for k in dictionary_cartesian.keys():
         for ik in original_dictionary.keys():
             if dictionary_cartesian[k] == original_dictionary[ik]:
-                result = True
-                return  result
-    return  result
+                message = f'{ik} {message_cartesian} t{k[0]} and t{k[1]} '
+                return  message
+    return  message
 
 

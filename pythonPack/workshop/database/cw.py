@@ -10,13 +10,9 @@ def db2Dict(inDb): #converts a database to a dictionary of relations
     for table in tables:
         cur.execute(f"SELECT * FROM {table};")
         dbDict[table] = set(cur.fetchall())
-        "THIS RETURN A DICTIONARY OF TABLE"
-    print(f'The table are {dbDict}\n')
     conn.close()
     return dbDict
 
-rels=db2Dict(sys.argv[1])
-print(f'The return is {rels}\n')
 rels=db2Dict(sys.argv[1]); res=solution.task0(rels)
 for msg in res: print(msg)
 
@@ -25,7 +21,6 @@ if len(sys.argv)>2: #task1
 	conn = sqlite3.connect(outDb); cursor = conn.cursor()
 	for sqlStatement in solution.task1(): cursor.execute(sqlStatement);
 	conn.commit(); conn.close()
-
 
 """"
 
