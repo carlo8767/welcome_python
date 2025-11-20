@@ -396,9 +396,32 @@ class TestDictionary(unittest.TestCase):
             for second_key in range (firstKey-1, -1, -1):
                 dictionary_store_concat[firstKey, second_key] = self.set_cartesian_pruduct(list_tuple[firstKey],
                                                                                            list_tuple[second_key])
-
-
         assert dictionary_store_concat [(0,1)] == dictionary_p ["t4"]
+
+
+    def test_cartesian_two(self):
+        # ITERATE OVER A SET OF LIST WITH INDEX
+        list_tuple = list(self.dictionary_cartesian.values())
+        dictionary_store_concat = dict()
+        until = len(list_tuple)
+        # FROM BEGIN TO EMD
+        for firstKey, v in enumerate(list_tuple[0:until]):
+            for second_key,v in enumerate(list_tuple[firstKey+1:], start=firstKey+1):
+             dictionary_store_concat [firstKey, second_key]  = self.set_cartesian_pruduct(list_tuple[firstKey], list_tuple[second_key])
+        # FROM END TO BEGIN
+        for firstKey in range(until-1,-1,-1):
+            for second_key in range (firstKey-1, -1, -1):
+                dictionary_store_concat[firstKey, second_key] = self.set_cartesian_pruduct(list_tuple[firstKey],
+                                                                                           list_tuple[second_key])
+
+        for k in dictionary_store_concat.keys():
+            for ik in self.dictionary_cartesian.keys():
+                if dictionary_store_concat[k] == self.dictionary_cartesian[ik]:
+                    print("EQUALS")
+
+
+
+        assert dictionary_store_concat [(8,22)] == self.dictionary_cartesian["t23"]
 
     """
         
