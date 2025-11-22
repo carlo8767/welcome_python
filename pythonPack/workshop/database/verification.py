@@ -220,7 +220,7 @@ class TestDictionary(unittest.TestCase):
        for i, v in enumerate(sets_list[0:len(sets_list)-1]):
            external = sets_list[i]
            for k, x in enumerate(sets_list[i+1:], start=1):
-            if len(x) < 2 or len(external) < 2 :
+            if v.issubset(x) or x.issubset(v):
                 continue
             result = external.intersection(x)
             if result:
@@ -232,36 +232,13 @@ class TestDictionary(unittest.TestCase):
                    print(f'intersection {internal_unpack}  from   t{unpack[0]} and t{unpack[1]}')
 
 
-
-    def test_unpacking_intersect_tuple (self):
-       # EXTRACT THE VALUE
-       dictionary_p = {"to": {(3, 3, 7, 8), (4, 3, 4, 1), (3, 3, 9, 8)},
-                       "t1": {(9, 8, 8, 8), (4, 3, 1, 1), (3, 3, 0, 5)},
-                       "t2": {(8, 8, 9, 9), (4, 3, 0, 8), (3, 3, 7, 8)},
-                       "t3": {(3, 3, 7, 8)}
-                       }
-       # sets_list = list(self.dictionary_base_intersection.values())
-       sets_list = list(dictionary_p.values())
-       list_intersection = list()
-       index_intersection = -1
-       for i, v in enumerate(sets_list[0:]):
-           result = sets_list[i]
-           for x in sets_list[i+1:]:
-            result = result.intersection(x)
-            result.union()
-            if result:
-                list_intersection.append(result)
-                index_intersection = (i, i+1)
-       assert list_intersection == [{(20, 97, 62, 51, 59)}]
-       assert index_intersection == (26,27)
-
-
-
     def test_unpacking_union_second(self):
         dictionary_p = {"to": {(3, 3, 7, 8), (4, 3, 4, 1), (3, 3, 9, 8)},
                         "t1": {(3, 3, 7, 8), (4, 3, 4, 1), (3, 3, 9, 8), (9, 8, 8, 8), (4, 3, 1, 1), (3, 3, 0, 5)},
                         "t2": {(9, 8, 8, 8), (4, 3, 1, 1), (3, 3, 0, 5)},
-                        "t3": {(8, 8, 9, 9), (4, 3, 0, 8), (3, 3, 4, 5)}
+                        "t3": {(8, 8, 9, 9), (4, 3, 0, 8), (3, 3, 4, 5)},
+                        "t4": {(8, 1, 7, 4), (4, 3, 0, 7), (3, 9, 10, 11)},
+                        "t5": {(8, 8, 9, 9), (4, 3, 0, 8), (3, 3, 4, 5), (8, 1, 7, 4), (4, 3, 0, 7), (3, 9, 10, 11) }
                         }
 
         sets_list = list(dictionary_p.values())
@@ -278,7 +255,7 @@ class TestDictionary(unittest.TestCase):
         for external_key in dictionary_union.keys():
             for internal_key in dictionary_p.keys():
                 if dictionary_union[external_key] == dictionary_p[internal_key]:
-                  print(f' {internal_key} is UNION of t{external_key[0]} and t{external_key[1]}')
+                  print(f'\n {internal_key} is UNION of t{external_key[0]} and t{external_key[1]}')
 
         """
         t10 is UNION of t1 and t12
@@ -409,12 +386,16 @@ class TestDictionary(unittest.TestCase):
         dictionary_store_concat = dict()
         until = len(list_tuple)
         # FROM BEGIN TO EMD
-        for firstKey, v in enumerate(list_tuple[0:until]):
-            for second_key,v in enumerate(list_tuple[firstKey+1:], start=firstKey+1):
-             dictionary_store_concat [firstKey, second_key]  = self.set_cartesian_pruduct(list_tuple[firstKey], list_tuple[second_key])
+        for firstKey, extv in enumerate(list_tuple[0:until]):
+            for second_key, interv in enumerate(list_tuple[firstKey+1:], start=firstKey+1):
+                if extv.issubset(interv) or extv.issubset(interv):
+                   continue
+                dictionary_store_concat [firstKey, second_key]  = self.set_cartesian_pruduct(list_tuple[firstKey], list_tuple[second_key])
         # FROM END TO BEGIN
         for firstKey in range(until-1,-1,-1):
             for second_key in range (firstKey-1, -1, -1):
+                if list_tuple[firstKey].issubset( list_tuple[second_key]) or  list_tuple[second_key].issubset( list_tuple[firstKey]) :
+                    continue
                 dictionary_store_concat[firstKey, second_key] = self.set_cartesian_pruduct(list_tuple[firstKey],
                                                                                            list_tuple[second_key])
         assert dictionary_store_concat [(0,1)] == dictionary_p ["t4"]
