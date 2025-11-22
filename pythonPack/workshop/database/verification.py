@@ -205,9 +205,43 @@ class TestDictionary(unittest.TestCase):
                        }
 
 
+    def test_real_unpacking_intersect_tuple (self):
+       # EXTRACT THE VALUE
+       dictionary_p = {"to": {(3, 3, 7, 8), (4, 3, 4, 1), (3, 3, 9, 8)},
+                       "t1": {(3, 3, 7, 8)},
+                       "t2": {(9, 8, 8, 8), (4, 3, 1, 1), (3, 3, 0, 5)},
+                       "t3": {(8, 8, 9, 9), (4, 3, 0, 8), (3, 3, 7, 8)}
+
+                       }
+       # sets_list = list(self.dictionary_base_intersection.values())
+       sets_list = list(dictionary_p.values())
+       index_intersection = -1
+       dictionary_interset = dict()
+       for i, v in enumerate(sets_list[0:len(sets_list)-1]):
+           external = sets_list[i]
+           for k, x in enumerate(sets_list[i+1:], start=1):
+            if len(x) < 2 or len(external) < 2 :
+                continue
+            result = external.intersection(x)
+            if result:
+                dictionary_interset[i, k] = result
+                break # CANNOT HAVE MORE THAN ONE INTERSECTION
+       for unpack in dictionary_interset.keys():
+           for internal_unpack in dictionary_p.keys():
+               if dictionary_interset[unpack] == dictionary_p [internal_unpack]:
+                   print(f'intersection {internal_unpack}  from   t{unpack[0]} and t{unpack[1]}')
+
+
+
     def test_unpacking_intersect_tuple (self):
        # EXTRACT THE VALUE
-       sets_list = list(self.dictionary_base_intersection.values())
+       dictionary_p = {"to": {(3, 3, 7, 8), (4, 3, 4, 1), (3, 3, 9, 8)},
+                       "t1": {(9, 8, 8, 8), (4, 3, 1, 1), (3, 3, 0, 5)},
+                       "t2": {(8, 8, 9, 9), (4, 3, 0, 8), (3, 3, 7, 8)},
+                       "t3": {(3, 3, 7, 8)}
+                       }
+       # sets_list = list(self.dictionary_base_intersection.values())
+       sets_list = list(dictionary_p.values())
        list_intersection = list()
        index_intersection = -1
        for i, v in enumerate(sets_list[0:]):
@@ -221,8 +255,54 @@ class TestDictionary(unittest.TestCase):
        assert list_intersection == [{(20, 97, 62, 51, 59)}]
        assert index_intersection == (26,27)
 
+
+
+    def test_unpacking_union_second(self):
+        dictionary_p = {"to": {(3, 3, 7, 8), (4, 3, 4, 1), (3, 3, 9, 8)},
+                        "t1": {(3, 3, 7, 8), (4, 3, 4, 1), (3, 3, 9, 8), (9, 8, 8, 8), (4, 3, 1, 1), (3, 3, 0, 5)},
+                        "t2": {(9, 8, 8, 8), (4, 3, 1, 1), (3, 3, 0, 5)},
+                        "t3": {(8, 8, 9, 9), (4, 3, 0, 8), (3, 3, 4, 5)}
+                        }
+
+        sets_list = list(dictionary_p.values())
+        dictionary_union = dict()
+        for key_external, value in enumerate(sets_list[0:len(sets_list)-1]):
+            for key_internal, internal_value in enumerate(sets_list[(key_external + 1):], start=key_external+ 1):
+                union_set = value.union(internal_value).copy()
+                # VERIFICATION NO SUBSET
+                if value.issubset(internal_value) or internal_value.issubset(value):
+                    continue
+                    # UNION REMOVE DUPLICATE ROW
+                dictionary_union[(key_external,key_internal)] = union_set
+
+        for external_key in dictionary_union.keys():
+            for internal_key in dictionary_p.keys():
+                if dictionary_union[external_key] == dictionary_p[internal_key]:
+                  print(f' {internal_key} is UNION of t{external_key[0]} and t{external_key[1]}')
+
+        """
+        t10 is UNION of t1 and t12
+        ASK IF EXIST MULTIPLE OPERATION CARLO
+                for s, t in enumerate(sets_list[0:], start=0):
+            if s == k or s == i:
+                continue
+            else:
+                if t == union_set:
+                    print(f'\n{union_set}')
+                    print(f'\n{s}')
+                    print(f'\n{i}')
+                    print(f'\n{k}')
+                    return
+        
+        """
+
     def test_unpacking_union(self):
-        sets_list = list(self.dictionary_base_union.values())
+        dictionary_p = {"to":{(3,3,7,8), (4,3,4,1), (3,3,9,8)},
+                        "t1":{(9,8,8,8), (4,3,1,1), (3,3,0,5)},
+                        "t3":{(8, 8,9,9), (4, 3,0,8), (3, 3,4,5)},
+                        "t4": {(3,3,7,8), (4,3,4,1), (3,3,9,8), (9,8,8,8), (4,3,1,1), (3,3,0,5)}
+                        }
+        sets_list = list(dictionary_p.values())
         for i, v in enumerate(sets_list[0:]):
             for k, p in enumerate(sets_list[(i+1):], start=i+1):
                 union_set = v.union(p).copy()
@@ -299,65 +379,6 @@ class TestDictionary(unittest.TestCase):
 
         assert  tuple_list_verification[0] == set_tuples
 
-    def test_cartesian_other(self):
-        tuple_cartesian = {
-            't23': {(16, 84, 66, 55, 12, 4, 46, 17, 21, 53, 5), (45, 89, 47, 96, 48, 6, 29, 83, 75, 56, 18),
-                    (5, 84, 94, 22, 43, 66, 60, 5, 57, 67, 17), (48, 87, 27, 83, 48, 6, 29, 83, 75, 56, 18),
-                    (45, 89, 47, 96, 43, 66, 60, 5, 57, 67, 17), (5, 84, 94, 22, 60, 50, 18, 57, 93, 2, 99),
-                    (26, 99, 97, 44, 57, 48, 91, 39, 45, 91, 54), (75, 48, 65, 76, 44, 27, 20, 10, 64, 47, 91),
-                    (75, 48, 65, 76, 60, 50, 18, 57, 93, 2, 99), (5, 84, 94, 22, 57, 48, 91, 39, 45, 91, 54),
-                    (48, 87, 27, 83, 71, 90, 99, 40, 10, 61, 36), (30, 24, 83, 26, 48, 6, 29, 83, 75, 56, 18),
-                    (25, 81, 91, 68, 43, 66, 60, 5, 57, 67, 17), (45, 89, 47, 96, 57, 48, 91, 39, 45, 91, 54),
-                    (45, 89, 47, 96, 44, 27, 20, 10, 64, 47, 91), (25, 81, 91, 68, 60, 50, 18, 57, 93, 2, 99),
-                    (26, 99, 97, 44, 40, 80, 98, 67, 40, 68, 74), (30, 24, 83, 26, 71, 90, 99, 40, 10, 61, 36),
-                    (26, 99, 97, 44, 60, 50, 18, 57, 93, 2, 99), (48, 87, 27, 83, 40, 80, 98, 67, 40, 68, 74),
-                    (30, 24, 83, 26, 60, 50, 18, 57, 93, 2, 99), (26, 99, 97, 44, 71, 90, 99, 40, 10, 61, 36),
-                    (25, 81, 91, 68, 44, 27, 20, 10, 64, 47, 91), (25, 81, 91, 68, 71, 90, 99, 40, 10, 61, 36),
-                    (16, 84, 66, 55, 60, 50, 18, 57, 93, 2, 99), (30, 24, 83, 26, 12, 4, 46, 17, 21, 53, 5),
-                    (25, 81, 91, 68, 12, 4, 46, 17, 21, 53, 5), (16, 84, 66, 55, 71, 90, 99, 40, 10, 61, 36),
-                    (26, 99, 97, 44, 44, 27, 20, 10, 64, 47, 91), (5, 84, 94, 22, 44, 27, 20, 10, 64, 47, 91),
-                    (45, 89, 47, 96, 12, 4, 46, 17, 21, 53, 5), (75, 48, 65, 76, 48, 6, 29, 83, 75, 56, 18),
-                    (16, 84, 66, 55, 57, 48, 91, 39, 45, 91, 54), (45, 89, 47, 96, 60, 50, 18, 57, 93, 2, 99),
-                    (5, 84, 94, 22, 71, 90, 99, 40, 10, 61, 36), (30, 24, 83, 26, 44, 27, 20, 10, 64, 47, 91),
-                    (26, 99, 97, 44, 43, 66, 60, 5, 57, 67, 17), (75, 48, 65, 76, 40, 80, 98, 67, 40, 68, 74),
-                    (48, 87, 27, 83, 43, 66, 60, 5, 57, 67, 17), (5, 84, 94, 22, 40, 80, 98, 67, 40, 68, 74),
-                    (16, 84, 66, 55, 44, 27, 20, 10, 64, 47, 91), (75, 48, 65, 76, 71, 90, 99, 40, 10, 61, 36),
-                    (25, 81, 91, 68, 57, 48, 91, 39, 45, 91, 54), (26, 99, 97, 44, 12, 4, 46, 17, 21, 53, 5),
-                    (75, 48, 65, 76, 57, 48, 91, 39, 45, 91, 54), (16, 84, 66, 55, 43, 66, 60, 5, 57, 67, 17),
-                    (30, 24, 83, 26, 57, 48, 91, 39, 45, 91, 54), (48, 87, 27, 83, 57, 48, 91, 39, 45, 91, 54),
-                    (25, 81, 91, 68, 40, 80, 98, 67, 40, 68, 74), (48, 87, 27, 83, 44, 27, 20, 10, 64, 47, 91),
-                    (45, 89, 47, 96, 71, 90, 99, 40, 10, 61, 36), (45, 89, 47, 96, 40, 80, 98, 67, 40, 68, 74),
-                    (75, 48, 65, 76, 12, 4, 46, 17, 21, 53, 5), (16, 84, 66, 55, 48, 6, 29, 83, 75, 56, 18),
-                    (30, 24, 83, 26, 43, 66, 60, 5, 57, 67, 17), (5, 84, 94, 22, 12, 4, 46, 17, 21, 53, 5),
-                    (48, 87, 27, 83, 12, 4, 46, 17, 21, 53, 5), (75, 48, 65, 76, 43, 66, 60, 5, 57, 67, 17),
-                    (30, 24, 83, 26, 40, 80, 98, 67, 40, 68, 74), (48, 87, 27, 83, 60, 50, 18, 57, 93, 2, 99),
-                    (16, 84, 66, 55, 40, 80, 98, 67, 40, 68, 74), (5, 84, 94, 22, 48, 6, 29, 83, 75, 56, 18),
-                    (26, 99, 97, 44, 48, 6, 29, 83, 75, 56, 18), (25, 81, 91, 68, 48, 6, 29, 83, 75, 56, 18)}
-            }
-
-        tuple_dictionarya = {
-            't8': {(45, 89, 47, 96), (75, 48, 65, 76), (25, 81, 91, 68), (26, 99, 97, 44), (30, 24, 83, 26),
-                   (48, 87, 27, 83), (16, 84, 66, 55), (5, 84, 94, 22)},
-            't22': {(60, 50, 18, 57, 93, 2, 99), (48, 6, 29, 83, 75, 56, 18), (44, 27, 20, 10, 64, 47, 91),
-                    (71, 90, 99, 40, 10, 61, 36), (57, 48, 91, 39, 45, 91, 54), (43, 66, 60, 5, 57, 67, 17),
-                    (40, 80, 98, 67, 40, 68, 74), (12, 4, 46, 17, 21, 53, 5)}
-            }
-
-        sets_list = list(tuple_dictionarya.values())
-        list_verification = list(tuple_cartesian.values())
-        dictionary_concatenation = dict()
-        set_values = set()
-        for i, ns in enumerate(sets_list[0:len(sets_list)-1]):
-            entrance = sets_list[i]
-            # EXTRACT SINGLE VALUE
-            # CONCATENATE INTERNAL AND ETERNAL
-            internal = sets_list[i+1]
-            for n in entrance:
-                for s in internal:
-                    tuple_c = n + s
-                    set_values.add(tuple_c)
-            # VERIFY IF ARE THE SAME
-        assert  set_values == list_verification[0]
     
     def test_ap_operation(self):
         list_number = [0,99,88,475,5]
