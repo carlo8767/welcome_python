@@ -1,11 +1,15 @@
 # You can edit this file but cannot import anything.
 # MESSAGE RESULT
+
+
+
+
+INDEX_CREATE_TABLE = list()
 message_cartesian = "is CARTPROD of"
 message_no_match = "NO MATCH"
 message_intersection = "is INTERSECTION of"
 message_union = "is UNION of"
-
-
+list_insert_db = list()
 
 def task0(relations):
     # input is a dictionary of relations; output is a list of message strings to be printed,
@@ -30,6 +34,8 @@ def task0(relations):
             print("ENTER HERE INTERSECTION")
             append_result_cart_union_inter(list_message, result_intersection)
     return list_message
+
+
 def task1(): # returns a list of sqlite statements to create tables and populate them; 
     return []
 
@@ -61,6 +67,8 @@ def verify_union (dictionary_relation):
             if dictionary_union[external_key] == dictionary_relation[internal_key]:
                 # VERIFY IF THEY WANT DUPLICATE
                 message_return = f'{internal_key} {message_union} t{external_key[0]} and t{external_key[1]}'
+                # SAVE GLOBALLY FOR TASK 1
+                INDEX_CREATE_TABLE.append(external_key)
                 list_message.append(message_return)
     return list_message
 
@@ -88,6 +96,8 @@ def verify_intersection(dictionary_relation):
            if dictionary_interset[unpack] == dictionary_relation [internal_unpack]:
                message_result = f'{internal_unpack} {message_intersection} t{unpack[0]} and t{unpack[1]}'
                list_message.append(message_result)
+               # SAVE GLOBALLY FOR TASK 1
+               INDEX_CREATE_TABLE.append(unpack)
    return  list_message
 
 """
@@ -135,6 +145,7 @@ def find_occurrence_cartesian (dictionary_cartesian, original_dictionary)-> list
             if dictionary_cartesian[k] == original_dictionary[ik]:
                 message = f'{ik} {message_cartesian} t{k[0]} and t{k[1]} '
                 list_message.append(message)
+                INDEX_CREATE_TABLE.append(k)
     return  list_message
 
 
