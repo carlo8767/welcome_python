@@ -5,6 +5,7 @@
 
 
 INDEX_CREATE_TABLE = list()
+DICTIONARY_TABLE = dict()
 message_cartesian = "is CARTPROD of"
 message_no_match = "NO MATCH"
 message_intersection = "is INTERSECTION of"
@@ -36,9 +37,72 @@ def task0(relations):
     return list_message
 
 
-def task1(): # returns a list of sqlite statements to create tables and populate them; 
-    return []
+def task1(): # returns a list of sqlite statements to create tables and populate them;
+    list_message = list()
+    list_create = create_statement()
+    list_insert = insert_statement()
+    if list_create:
+        print(list_create)
+        append_query(list_message, list_create)
+    if list_insert:
+        print(list_insert)
+        append_query(list_message, list_insert)
+    return list_message
 
+
+
+
+""" TASK 1 CREATION QUERY CREATE AND INSERT """
+
+
+def append_query (list_message, list_result):
+    for values in list_result:
+        list_message.append(values)
+
+
+def create_statement():
+    list_keys = list()
+    list_statement = list()
+    for values in INDEX_CREATE_TABLE:
+        table_one = 't'+str(values[0])
+        table_two = 't'+str(values[1])
+        list_keys.append(table_one)
+        list_keys.append(table_two)
+    # PREPARE STATEMENT
+    for extract_key in list_keys:
+        # EXTRACT THE SIZE OF THE TUPLE
+        size_insert_value = DICTIONARY_TABLE[extract_key]
+        for p in size_insert_value:
+            prepare_statement = f'CREATE TABLE'
+            size = len(p)
+            prepare_statement+=f' {extract_key} ('
+            print(f'extract key {size} ')
+            for n in range(0, size):
+                if size-1 == n:
+                    prepare_statement +=f' c{n} INTEGER ) ;'
+                else:
+                    prepare_statement += f' c{n} INTEGER, '
+            list_statement.append(prepare_statement)
+            break
+    return  list_statement
+
+def insert_statement():
+        list_insert = list()
+        for key in DICTIONARY_TABLE.keys():
+            internal = DICTIONARY_TABLE [key]
+            for index, entrance in enumerate(internal):
+                size_value = len(entrance)-1
+                prepare_statement = f'INSERT INTO {key} VALUES ('
+                for depth ,n in enumerate(entrance):
+                    if depth == size_value:
+                        prepare_statement += f'{n} ) ;'
+                    else:
+                        prepare_statement += f' {n}, '
+                list_insert.append(prepare_statement)
+        return list_insert
+
+
+"""TASK 0 METHOD UNION INTERSECT CARTESIAN """
 
 
 " APPEND RESULT "
@@ -49,7 +113,6 @@ def append_result_cart_union_inter (list_message, list_result):
 
 
 " CALCULATION UNION "
-
 
 def verify_union (dictionary_relation):
     list_message = list()
@@ -68,7 +131,11 @@ def verify_union (dictionary_relation):
                 # VERIFY IF THEY WANT DUPLICATE
                 message_return = f'{internal_key} {message_union} t{external_key[0]} and t{external_key[1]}'
                 # SAVE GLOBALLY FOR TASK 1
+                key_one = f't{external_key[0]}'
+                key_two = f't{external_key[1]}'
                 INDEX_CREATE_TABLE.append(external_key)
+                DICTIONARY_TABLE[key_one] = dictionary_relation[key_one]
+                DICTIONARY_TABLE[key_two] = dictionary_relation[key_two]
                 list_message.append(message_return)
     return list_message
 
@@ -97,6 +164,10 @@ def verify_intersection(dictionary_relation):
                message_result = f'{internal_unpack} {message_intersection} t{unpack[0]} and t{unpack[1]}'
                list_message.append(message_result)
                # SAVE GLOBALLY FOR TASK 1
+               key_one = f't{unpack[0]}'
+               key_two = f't{unpack[1]}'
+               DICTIONARY_TABLE [key_one] = dictionary_relation[key_one]
+               DICTIONARY_TABLE[key_two] = dictionary_relation[key_two]
                INDEX_CREATE_TABLE.append(unpack)
    return  list_message
 
@@ -145,6 +216,10 @@ def find_occurrence_cartesian (dictionary_cartesian, original_dictionary)-> list
             if dictionary_cartesian[k] == original_dictionary[ik]:
                 message = f'{ik} {message_cartesian} t{k[0]} and t{k[1]} '
                 list_message.append(message)
+                key_one = f't{k[0]}'
+                key_two = f't{k[1]}'
+                DICTIONARY_TABLE[key_one] = original_dictionary[key_one]
+                DICTIONARY_TABLE[key_two] = original_dictionary[key_two]
                 INDEX_CREATE_TABLE.append(k)
     return  list_message
 
