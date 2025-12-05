@@ -79,9 +79,14 @@ def setupArgumentParser() -> argparse.Namespace:
     parser_w.set_defaults(func=WebServer)
 
     parser_x = subparsers.add_parser('proxy', aliases=['x'], help='run proxy')
-    parser_x.set_defaults(port=8000)
+    parser_x.set_defaults(port=3128)
+    parser_x.add_argument('--portx', '-px', type=int, nargs='?',
+                          help='port number to start proxy')
+    parser_x.set_defaults(func=Proxy)
+
     parser_x.add_argument('--port', '-p', type=int, nargs='?',
-                          help='port number to start web server listening on')
+                          help='port number to begin web server')
+    parser_x.set_defaults(port=8000)
     parser_x.set_defaults(func=Proxy)
 
     if len(sys.argv) < 2:
@@ -613,7 +618,6 @@ class Traceroute(ICMPPing):
 class MultiThreadedTraceRoute(Traceroute):
 
     def __init__(self, args):
-
         self.args = args
         self.ttl_flag = 0
         # ICMP THREAD VARIABLE
@@ -624,51 +628,29 @@ class MultiThreadedTraceRoute(Traceroute):
         self.packet_received_ready = dict()
         self.list_probes = list()
         self.ttl_count = 0
-        # UDP VARIABLE
-        self.udp_send_packt = dict()
-        self.udp_received_packet = dict()
-        self.dstPort_base = 33439
         self.isDestinationReached_Thread = False
-
-        # 1. Initialise instance variables (add others if needed)
 
         try:
             self.dstAddress = socket.gethostbyname(args.hostname)
-
-            # socket.getaddrinfo(args.hostname, None, socket.AF_INET6)
         except socket.gaierror:
             print('Invalid hostname: ', args.hostname)
             return
         print('%s traceroute to: %s (%s) ...' % (args.protocol, args.hostname, self.dstAddress))
 
-        # 2. Initialise instance variables
         self.isDestinationReached = False
-
-        # 3. Create a raw socket bound to ICMP protocol
         self.icmpSocket = None
         try:
             self.icmpSocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
         except socket.error as err:
             traceback.print_exception(err)
             exit(1)
-        # CARLO
-        # 4. Set a timeout on the socket
+
         self.icmpSocket.settimeout(args.timeout)
         args.protocol = args.protocol.lower()
         self.timeout = args.timeout
-
-        # THREAD
-        # NOTE you must use a lock when accessing data shared between the two threads
         self.lock = threading.Lock()
-        # 2. Create a thread to send probes CARLO
-
-        # 3. Create a thread to receive responses
-
-         # I WANT TO MODIFY BECAUSE OTHERWSIE IS RUN IN PARALLEL
-        # 4. Start the threads
 
         if args.protocol == "icmp":
-            print("ICMP BEGIN")
             self.send_complete = threading.Event()
             self.receiving_complete = threading.Event()
             self.send_thread = threading.Thread(target=self.send_probes)
@@ -681,28 +663,10 @@ class MultiThreadedTraceRoute(Traceroute):
             self.recv_thread.join()
             self.print_thread.join()
 
-
-
         elif args.protocol == "udp":
         # UDP PART
-            print("UDP BEGIN")
-            self.receivedUpd_complete =  threading.Event()
-            self.send_complete = threading.Event()
-            self.send_thread = threading.Thread(target=self.send_probes)
-            self.recv_thread_udp = threading.Thread(target=self.receieveUdpThread)
-            self.print_thread_udp = threading.Thread(target=self.print_result_udp)
-            self.send_thread.start()
-            self.recv_thread_udp.start()
-            self.print_thread_udp.start()
-            self.send_thread.join()
-            self.recv_thread_udp.join()
-            self.print_thread_udp.join()
+            print("UDP IS NOT MANDATORY")
 
-        # 5. Wait until both threads are finished executing
-
-        #  6. TODO Print results
-       # def printMultipleResults(self, ttl: int, pkt_keys: list, hop_addrs: dict, rtts: dict, destinationHostname=''):
-        # 6. Close ICMP socket
         self.icmpSocket.close()
 
         # Thread to send probes (to be implemented, a skeleton is provided)
@@ -711,171 +675,77 @@ class MultiThreadedTraceRoute(Traceroute):
         ttl = 1
         while  ttl <= MAX_TTL and self.isDestinationReached_Thread == False:
             # Send three probes per TTL
-            # PIPPO UPDATE TTL
             for _ in range(3):
                 if args.protocol == "icmp":
                  self.sendIcmpProbessThread(ttl)
                 elif args.protocol == "udp":
-                    self.sendUdpProbesThread(ttl)
-
-                # Sleep for a short period between sending probes IT WORK UNTIL ITS NOT FINISH
-                time.sleep(0.05)  # Small delay between probes
+                    print("UDP IS NOT MANDATORY")
+                time.sleep(0.05)
             ttl+=1
             self.probes_unique += 1
             self.list_probes.clear()
-
-        # A final sleep before notifying the receive thread to exit
-        # time.sleep(args.timeout)
-        # Notify the other thread that sending is complete IT WILL PRINT UNTIL IS NOT FINISH
-        print("COMPLETE!!")
-        time.sleep(2)  # Sleep for 3 seconds
+        time.sleep(2)
         with self.lock:
             self.send_complete.set()
             time.sleep(2)
-            # THIS IS THE ERROR I NEED TO FIND ANOTHER WAIT
             self.receiving_complete.set()
-        # BEFORE RETURN VERIFY THAT YOU RECEIVE THE ANSWER
-        # I NEED TO PRINT THE SEQUENCE ID OR
-        # TODO: send 3 ICMP traceroute probes per TTL and collect responses
-
-        # Send 3 UDP traceroute probes per TTL and collect responses
-    def sendUdpProbesThread(self, ttl):
-        self.ttl_flag += 1
-        numBytes = 52
-        # 1. Send one UDP traceroute probe
-
-        dstPort = self.dstPort_base
-        timeSent = self.sendOneUdpProbe(self.dstAddress, dstPort, ttl, numBytes)
-        # STORE PACKET INFO
-        with self.lock:
-            self.udp_send_packt[dstPort] = (timeSent, dstPort,   self.ttl_flag, numBytes)
-            self.dstPort_base += 1
 
 
-    def receieveUdpThread(self):
-        while not (self.send_complete.is_set() and not self.udp_send_packt):
-            list_udp_pkt = list()
-            trReplyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
-            if trReplyPacket is None:
-                # VERIFY THERE IS MORE SMARt
-                self.receivedUpd_complete.set()
-                break
-                    # 4. Extract destination port from the reply
-
-            dstPortReceived, icmpType = self.parseUDPTracerouteResponse(trReplyPacket)
-                    # I NEED TO EXTRACT FROM THE RECEICED THE PORT KEY ARRIVE OTHERWISE DOESN NOT MATCH
-            if dstPortReceived not in self.udp_send_packt:
-                        continue
-            timeSent, dstPort, ttl, numBytes = self.udp_send_packt.pop(dstPortReceived)
-            list_udp_pkt.append(dstPort)
-            time_collect = timeRecvd - timeSent
-            self.udp_received_packet[dstPort] = (list_udp_pkt,time_collect,dstPort, hopAddr,ttl,dstPortReceived,icmpType)
-
-
-    def print_result_udp(self):
-        self.receivedUpd_complete.wait()
-        with self.lock:
-            hop_addrs= dict()
-            rtts = dict()
-            for key, values in self.udp_received_packet.items():
-                list_udp_pkt,time_collect,dstPort, hopAddr,ttl,dstPortReceived,icmpType = self.udp_received_packet[key]
-                # 5. Check if we reached the destination
-                if self.dstAddress == hopAddr and icmpType == 3:
-                    rtts[dstPort] = time_collect
-                    hop_addrs[dstPort] = hopAddr
-                    self.isDestinationReached = True
-                if dstPort == dstPortReceived:
-                    rtts[dstPort] = time_collect
-                    hop_addrs[dstPort] = hopAddr
-                # 7. Print one line of the results for the 3 probes
-                self.printMultipleResults(ttl, list_udp_pkt, hop_addrs, rtts, args.hostname)
-
-    # ICMP THREAD CARLO
     def sendIcmpProbessThread(self, ttl):
         self.ttl_flag = ttl
         self.icmpSocket.setsockopt(socket.SOL_IP, socket.IP_TTL,  ttl )
         seq_num_probes =  self.seq_num_packet_probes  # CAN SUBSTITUTE WITH TTL
         packet_id =  self.packet_id
-        # BUILD THE PACKET
         header = struct.pack('!BBHHH', ICMP_ECHO_REQUEST, 0, 0, packet_id, seq_num_probes)
-        # 2. Checksum ICMP packet using given function
-        # include some bytes 'AAA...' in the data (payload) of ping
         data = str.encode(48 * 'A')
         checksum = self.checksum(header + data)
         header = struct.pack('!BBHHH', ICMP_ECHO_REQUEST, 0, checksum, packet_id, seq_num_probes)
         packet = header + data
         send_time = time.time()
         self.icmpSocket.sendto(packet, (self.dstAddress, 0))
-        # COLLECT THE SEQUENCE OF THE SEND PACKET
-        # Record which packet was sent and when
         with self.lock:
-            # TTL and SEND TIMEpkt_keys_thread_send
             self.pkt_keys_thread_send [(packet_id, seq_num_probes)] = (packet_id, seq_num_probes, send_time ,self.ttl_flag)
-            # print(f'the send is {packet_id, seq_num_probes}')
         self.seq_num_packet_probes += 1
-    # Thread to receive responses (to be implemented, a skeleton is provided) # THIS IS CONTINUE LISTENING
+
+
     def receive_responses(self):
-            # 🧩 Exit if sending is done AND no packets left
             while not (self.send_complete.is_set() and not self.pkt_keys_thread_send):
                 list_pkt = []
                 if args.protocol == "icmp" :
                     try:
-                        # REPLY PACKET IS THERE
                         replyPacket, hopAddr, timeRecvd = self.receiveOneTraceRouteResponse()
-
-
-                            # PKT KEY, MATCH SEQUENCE NUMBER
                     except socket.timeout:
-                            continue  # no response, keep waiting
-
-                    # Determine which probe this reply matches
+                            continue
                     if replyPacket is None:
                         break
                     icm_code, src_ip, icmp_id, icmp_seq = self.parseICMPTracerouteResponseThread(replyPacket)
-                    # print(f'THE RECEIVE IS ICMP_CODE {icm_code}, THE SOURCE IP {src_ip},  THE ICMP_ID_PACKET {icmp_id}, ICMP_SEQUENCE_PROBES {icmp_seq}')
                     with self.lock:
                      if (icmp_id, icmp_seq) not in self.pkt_keys_thread_send:
                             continue
-                        # REMOVE THE PACKET THAT YOU HAVE RECEIVED # YOU DO NOT ALWAYS RECEIVE AN ANSWER
-                        # WHY I SEND THE ID PACKET MODIFY CARLO
-                            # MODIFY CARLO THhere is STILL A BUG
                      else:
                         packet_id, seq_num_probes, send_time, ttl = self.pkt_keys_thread_send.pop((icmp_id,icmp_seq))
-                        # STORE PKT APPEND HERE OF THE REQUEST NOT ARRIVE
-                        # VERIFY ORDER TTL
                         list_pkt.append((packet_id,seq_num_probes))
                         # OUT THE QUEUE AND READY TO PRINT
                         rtt = timeRecvd - send_time
                         self.packet_received_ready[(packet_id,seq_num_probes)] = (src_ip, icm_code, ttl, list_pkt.copy(), packet_id, hopAddr, rtt, args.hostname)
                 elif args.protocol == "udp":
-                    # Placeholder for future UDP logic
                     continue
-               # PROBLEM MULTIPLE RESPONSE
-
-
-
-            # if not (self.send_complete.is_set()):
-               # self.receiveOneTraceRouteResponse()
 
     def print_packet(self):
         self.receiving_complete.wait()
-        print("ENTER IN PRINT PACKET")
         rtts_thread = dict()
         hop_addrs_thread = dict()
-        # VERIFY ORDER TTTL
         ttl_no_answer = 1
         ttl_loop = False
         count_loop = 3
         for key, values in sorted(self.packet_received_ready.items(), key=lambda kv: kv[1][2]):
 
             src_ip, icm_code, ttl, list_pkt, id_packet, hop_address, rtt, hosting_names = self.packet_received_ready[key]
-
             while ttl_no_answer < ttl:
               listV = [0]
-
               hop_addrs_thread_fake = dict()
               for _ in range(3):
-                  self.printMultipleResults_Thread(ttl_no_answer, listV, hop_addrs_thread_fake,
+                  self.printMultipleResults(ttl_no_answer, listV, hop_addrs_thread_fake,
                                                      rtts_thread, hosting_names)
               ttl_loop = True
               ttl_no_answer += 1
@@ -894,47 +764,6 @@ class MultiThreadedTraceRoute(Traceroute):
             elif count_loop == 0 :
                 count_loop = 3
                 ttl_no_answer = ttl+1
-
-
-    def printMultipleResults_Thread(self, ttl: int, pkt_keys: list, hop_addrs: dict, rtts: dict, destinationHostname=''):
-            # THIS IS MY MISTAKE CAR
-        if pkt_keys is None:
-            (str(ttl) + '   * * *')
-            return
-        # Sort packet keys (sequence numbers or UDP ports)
-        pkt_keys = sorted(pkt_keys)
-        output = str(ttl) + '   '
-        last_hop_addr = None
-
-        for pkt_key in pkt_keys:
-            # If packet key is missing in hop addresses, this means no response received: print '*'
-            if pkt_key not in hop_addrs.keys():
-                output += '* '
-                continue
-            hop_addr = hop_addrs[pkt_key]
-
-            # Get the RTT for the probe
-            rtt = rtts[pkt_key]
-            if last_hop_addr is None or hop_addr != last_hop_addr:
-                hostName = None
-                try:
-                    # Get the hostname for the hop
-                    hostName = socket.gethostbyaddr(hop_addr)[0]
-                    if last_hop_addr is None:
-                        output += hostName + ' '
-                    else:
-                        output += ' ' + hostName + ' '
-                except socket.herror:
-                    output += hop_addr + ' '
-                last_hop_addr = hop_addr
-                last_hop_name = hostName
-                output += '(' + hop_addr + ') '
-
-            output += str(round(1000 * rtt, 3))
-            output += ' ms  '
-        # add
-        self.ttl_count = ttl
-        print(output)
 
     # TODO: parse the response to the ICMP probe
     # CARLO 3 STEP
@@ -981,26 +810,26 @@ class WebServer(NetworkApplication):
 
         self.path_store = "cache_page/index.txt"
         self.path_store_timeStamp = "./cache_page/time_stamp.txt"
-        self.port_web_server = 8081
+        self.port_web_server =  args.port
         self.connection_web_server = ""
         self.stop_event = stop_web_server_proxy
-        print('Web Server starting on port: %i...' % 8081)
+        print('> Web Server starting on port: %i...' %  args.port)
 
         # 1. Create a TCP socket
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # 2. Bind the TCP socket to server address and server port
-        server_socket.bind(("", 8081))
+        server_socket.bind(("",  args.port))
         # 3. Continuously listen for connections to server socket
         server_socket.listen(100)
-        print("Server listening on port", 8081)
+        print(">> Server listening on port",  args.port)
 
         try:
             while not self.stop_event.is_set():
                 try:
                     # 4. Accept incoming connections connection socket_repressent the conncetion
                     connection_socket, addr = server_socket.accept()
-                    print(f"Connection established with {addr}")
+                    print(f">>> Connection established with {addr}")
                 except OSError:
                         break
                 # MANAGE THE CONNECTION THE PROXI
@@ -1016,34 +845,12 @@ class WebServer(NetworkApplication):
 
     def handleRequest(self, connection_socket):
         try:
-            """
-             socket.share(process_id)
-            https://docs.python.org/3/library/socket.html#socket.socket.send
-                sudo python3 NetworkApplications.py proxy -p 8000
-                 sudo python3 NetworkApplications.py web -p 8080
-            """
-            # 1. Receive request message from the client
-            # WHAT YOU TEST ?
-
             message = connection_socket.recv(MAX_DATA_RECV).decode()
-            print(f'the content is {message}')
-            # HERE THE ISSUE YIHENG
             # 2. Extract the path of the requested object from the message (second part of the HTTP header)
             filename = message.split()[1]
-
             url = filename
             response = requests.get(url)
             data = response.content
-            print(f'THE FILE NAME IS {filename}')
-            print(f'this is the ANSWER {url}')
-            # print(f'THE FILE NAME IS {filename}')
-            # 3. Read the corresponding file from disk
-            # with open(filename[1:], 'r') as f:  # Skip the leading '/'
-               # content = f.read()
-            # 4. Create the HTTP response
-            # response = 'HTTP/1.1 200 OK\r\n\r\n'
-            # response = content
-            print(f'the response is {data}')
 
             # 5. Send the content of the file to the socket
             connection_socket.sendall(data)
@@ -1070,7 +877,7 @@ class WebServer(NetworkApplication):
 class Proxy(NetworkApplication):
 
     def __init__(self, args):
-        print('Proxy starting on port: %i...' % args.port)
+        print('> Proxy starting on port: %i...' % args.portx)
         self.path = "./cache_page"
         self.args = args
         self.stop_web_server_proxy = threading.Event()
@@ -1078,9 +885,9 @@ class Proxy(NetworkApplication):
         server_socket_proxy.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
-        server_socket_proxy.bind(("", args.port))
+        server_socket_proxy.bind(("", args.portx))
         server_socket_proxy.listen(100)
-        print("Server proxy listening on port", args.port)
+        print(">> Server proxy listening on port", args.portx)
         self.server_memo_page = dict()
 
 
@@ -1097,7 +904,7 @@ class Proxy(NetworkApplication):
                 except OSError:
                     break
                 # CREATE A NEW THREAD FOR EVERY CLIENT REQUEST
-                print(f"Connection established with {addr_proxy}")
+                print(f">>> Connection established with {addr_proxy}")
                 proxy_thread = threading.Thread(target=self.handleRequest_request_proxy,
                                                 args=(connection_socket_proxy,), daemon=True)
                 proxy_thread.start()
@@ -1132,31 +939,24 @@ class Proxy(NetworkApplication):
             try:
                 if os.path.isfile(file_path):
                     os.remove(file_path)
-                    print("Removed:", file_path)
             except Exception as e:
                 print("Error removing file:", file_path, e)
 
 
     def reading_cache (self,path, name_file ):
-        print("THE PATH IS ", path)
         content = b''
         try:
             with open(path, 'rb') as r:
                 content = r.read()
-                print("The content is ", content)
         except FileNotFoundError:
-            print("FILE NOT FOUND ")
-            with open(path, 'wb') as w:
-
-                w.write(content)
-                print("wFILE NOT FOUND")
+            return  content
         return  content
+
 
     def writing_in_cache(self,path, data_receive):
         try:
             with open (path,'wb') as w:
                 w.write(data_receive)
-                print("Writing in ", data_receive)
         except Exception as e:
             print(f'error in writing {e}')
 
@@ -1164,48 +964,43 @@ class Proxy(NetworkApplication):
 
     def handleRequest_request_proxy(self, connection_socket_proxy):
         try:
-
-            # PIPPO
-            print("ARRVE MESSAGE")
             message = connection_socket_proxy.recv(MAX_DATA_RECV).decode()
             name_file = self.extracts_main_domain(message)
-            print("SPLIT MESSAGE")
             self.server_memo_page[name_file]= b''
             # 1. READ THE CACHE
-            print(f'THE SPLIT CONTAINS {name_file}')
-            print("ARRIVE READING")
             search_file = self.path+"/"+name_file+".txt"
-            print(f'{search_file}')
             cache_present = self.reading_cache(search_file, name_file)
 
             if  cache_present.decode() == "":
-                print("ARRIVE EMPTY")
+                print(">>>> Contact the web server")
                 # CALL THE SERVER
-                print("Call Web Server")
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as ws_sock:
-                    ws_sock.connect(("127.0.0.1", 8081))
+                    # ENTER THE PORT OF THE WEB SERVER CARLO
+                    ws_sock.connect(("127.0.0.1",  args.port))
                     # 2. Send the message
                     ws_sock.sendall(message.encode())
                     # 3. Receive response
                     response_content = ws_sock.recv(MAX_DATA_RECV)
                  # 4. Forward response to client
-                    print("SEND THE REQUEST BACK")
+
                     # WRITE THE CACHE
                     self.writing_in_cache(search_file, response_content)
                     response = b'HTTP/1.1 200 OK\r\n\r\n'
-                    print("FINISH WRITING")
                     response += response_content
                 connection_socket_proxy.sendall(response)
+                print(">>>>> Answer is completed")
 
             else:
-                print("ELSE !!")
+                print(">>> Retrieve from the cache...")
                 response = b'HTTP/1.1 200 OK\r\n\r\n'
                 response += cache_present
-                connection_socket_proxy.send(response)
+                connection_socket_proxy.sendall(response)
+                print(">>>>> Answer is completed")
+
 
         except IOError:
             # Handle file not found error
-            print("ERROR PROXY")
+            print(">>> error proxy")
             error_response = "HTTP/1.1 404 Not Found\r\n\r\n"
             error_response += "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"
             connection_socket_proxy.send(error_response.encode())
@@ -1215,7 +1010,6 @@ class Proxy(NetworkApplication):
 
         finally:
             # Close the connection socket
-
             connection_socket_proxy.close()
 
 
@@ -1225,7 +1019,6 @@ if __name__ == "__main__":
     name = "aa.com"
     a = name.rsplit('.', 1)
     a = a[0]
-
     args = setupArgumentParser()
     args.func(args)
 
@@ -1258,6 +1051,10 @@ Some useful ones to remember are:
     # WHAT IS THE BEHAVE ASPECT WHEN THE PAGE REQUEST IS DIFFERENT ?
 sudo python3 NetworkApplications.py mtroute -p icmp lancs.ac.uk
 UNDERSTAND WHAT YOU CAN RECEIVE PAGE HTML
+
+ curl --proxy 127.0.0.1:8084 http://carlocarraro.altervista.org
+ curl http://carlocarraro.altervista.org --proxy 127.0.0.1:8084
+  curl  http://neverssl.com/ --proxy 127.0.0.1:8084
 
 
 
