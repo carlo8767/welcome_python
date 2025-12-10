@@ -1,9 +1,6 @@
 # You can edit this file but cannot import anything.
 # MESSAGE RESULT
 
-
-
-
 INDEX_CREATE_TABLE = list()
 DICTIONARY_TABLE = dict()
 message_cartesian = "is CARTPROD of"
@@ -22,17 +19,13 @@ def task0(relations):
     result_union = verify_union(relations)
 
     if not result_union  and not result_cartesian and not result_intersection:
-        print("ENTER HERE EMPTY")
         list_message.append(message_no_match)
     else:
         if  result_union:
-            print("ENTER HERE UNION")
             append_result_cart_union_inter(list_message, result_union)
         if  result_cartesian:
-            print("ENTER HERE CARTESIAN")
             append_result_cart_union_inter(list_message, result_cartesian)
         if  result_intersection:
-            print("ENTER HERE INTERSECTION")
             append_result_cart_union_inter(list_message, result_intersection)
     return list_message
 
@@ -42,49 +35,34 @@ def task1(): # returns a list of sqlite statements to create tables and populate
     list_create = create_statement()
     list_insert = insert_statement()
     if list_create:
-        print(list_create)
         append_query(list_message, list_create)
     if list_insert:
-        print(list_insert)
         append_query(list_message, list_insert)
     return list_message
 
 
-
-
 """ TASK 1 CREATION QUERY CREATE AND INSERT """
-
-
 def append_query (list_message, list_result):
     for values in list_result:
         list_message.append(values)
 
-
 def create_statement():
-    list_keys = list()
     list_statement = list()
-    for values in INDEX_CREATE_TABLE:
-        table_one = 't'+str(values[0])
-        table_two = 't'+str(values[1])
-        list_keys.append(table_one)
-        list_keys.append(table_two)
-    # PREPARE STATEMENT
-    for extract_key in list_keys:
+    for extract_key in INDEX_CREATE_TABLE:
         # EXTRACT THE SIZE OF THE TUPLE
         size_insert_value = DICTIONARY_TABLE[extract_key]
         for p in size_insert_value:
             prepare_statement = f'CREATE TABLE'
             size = len(p)
-            prepare_statement+=f' {extract_key} ('
-            print(f'extract key {size} ')
+            prepare_statement += f' {extract_key} ('
             for n in range(0, size):
-                if size-1 == n:
-                    prepare_statement +=f' c{n} INTEGER ) ;'
+                if size - 1 == n:
+                    prepare_statement += f' c{n} INTEGER ) ;'
                 else:
                     prepare_statement += f' c{n} INTEGER, '
             list_statement.append(prepare_statement)
             break
-    return  list_statement
+    return list_statement
 
 def insert_statement():
         list_insert = list()
@@ -105,6 +83,7 @@ def insert_statement():
 """TASK 0 METHOD UNION INTERSECT CARTESIAN """
 
 
+
 " APPEND RESULT "
 
 def append_result_cart_union_inter (list_message, list_result):
@@ -118,76 +97,92 @@ def verify_union (dictionary_relation):
     list_message = list()
     sets_list = list(dictionary_relation.values())
     dictionary_union = dict()
-    for key_external, value in enumerate(sets_list[0:len(sets_list) - 1]):
-        for key_internal, internal_value in enumerate(sets_list[(key_external + 1):], start=key_external + 1):
+    for value in sets_list:
+        for internal_value in sets_list:
             union_set = value.union(internal_value).copy()
             if value.issubset(internal_value) or internal_value.issubset(value):
                 continue
-            dictionary_union[(key_external, key_internal)] = union_set
+            dictionary_union[(sets_list.index(value), sets_list.index(internal_value))] = union_set
 
     for external_key in dictionary_union.keys():
         for internal_key in dictionary_relation.keys():
             if dictionary_union[external_key] == dictionary_relation[internal_key]:
+                value_key_search = sets_list[external_key[0]]
+                value_second_key_search = sets_list[external_key[1]]
                 # VERIFY IF THEY WANT DUPLICATE
-                message_return = f'{internal_key} {message_union} t{external_key[0]} and t{external_key[1]}'
-                # SAVE GLOBALLY FOR TASK 1
-                key_one = f't{external_key[0]}'
-                key_two = f't{external_key[1]}'
-                INDEX_CREATE_TABLE.append(external_key)
-                DICTIONARY_TABLE[key_one] = dictionary_relation[key_one]
-                DICTIONARY_TABLE[key_two] = dictionary_relation[key_two]
+                message_return = f'{internal_key} {message_union}'
+                for k in dictionary_relation.keys():
+                    values_compare = dictionary_relation[k]
+                    # SAVE GLOBALLY FOR TASK 1
+                    if values_compare == value_key_search:
+                        INDEX_CREATE_TABLE.append(k)
+                        DICTIONARY_TABLE[k] = values_compare
+                        message_return += f' {k}'
+                    if values_compare == value_second_key_search:
+                        DICTIONARY_TABLE[k] = values_compare
+                        message_return += f' and {k}'
+                        INDEX_CREATE_TABLE.append(k)
                 list_message.append(message_return)
+                # EVALUATE A BREAK
+                return list_message
     return list_message
-
 
 
 " CALCULATION INTERSECTION "
 
 # EXTRACT THE VALUE
 def verify_intersection(dictionary_relation):
-   list_message = list()
-   # VERIFY IF THERE IS ONLY ONE MESSAGE
-   sets_list = list(dictionary_relation.values())
-   dictionary_interset = dict()
-   for key_external, v in enumerate(sets_list[0:len(sets_list)-1]):
-       external = sets_list[key_external]
-       for key_internal, x in enumerate(sets_list[key_external+1:], start=1):
-        if v.issubset(x) or x.issubset(v):
-               continue
-        result = external.intersection(x)
-        if result:
-            dictionary_interset[key_external, key_internal] = result
-            break # CANNOT HAVE MORE THAN ONE INTERSECTION
-   for unpack in dictionary_interset.keys():
-       for internal_unpack in dictionary_relation.keys():
-           if dictionary_interset[unpack] == dictionary_relation [internal_unpack]:
-               message_result = f'{internal_unpack} {message_intersection} t{unpack[0]} and t{unpack[1]}'
-               list_message.append(message_result)
-               # SAVE GLOBALLY FOR TASK 1
-               key_one = f't{unpack[0]}'
-               key_two = f't{unpack[1]}'
-               DICTIONARY_TABLE [key_one] = dictionary_relation[key_one]
-               DICTIONARY_TABLE[key_two] = dictionary_relation[key_two]
-               INDEX_CREATE_TABLE.append(unpack)
-   return  list_message
-
+    list_message = list()
+    # VERIFY IF THERE IS ONLY ONE MESSAGE
+    sets_list = list(dictionary_relation.values())
+    dictionary_interset = dict()
+    for v in sets_list:
+        for x in sets_list:
+            if v.issubset(x) or x.issubset(v):
+                continue
+            result = v.intersection(x)
+            if result:
+                if result in dictionary_interset.values():
+                    continue
+                dictionary_interset[sets_list.index(v), sets_list.index(x)] = result
+                break  # CANNOT HAVE MORE THAN ONE INTERSECTION
+    for unpack in dictionary_interset.keys():
+        for internal_unpack in dictionary_relation.keys():
+            if dictionary_interset[unpack] == dictionary_relation[internal_unpack]:
+                result_values = sets_list[unpack[0]]
+                extra_result_values = sets_list[unpack[1]]
+                # NAME TABLE
+                message_result = f'{internal_unpack} {message_intersection}'
+                # VERIFICATION AND EXTRACTION OF THE NAME TABLE
+                # TABLE NAME IS NOT FIXED
+                for k in dictionary_relation.keys():
+                    values_compare = dictionary_relation[k]
+                    if values_compare == result_values:
+                        DICTIONARY_TABLE[k] = values_compare
+                        INDEX_CREATE_TABLE.append(k)
+                        message_result += f' {k}'
+                    if values_compare == extra_result_values:
+                        DICTIONARY_TABLE[k] = values_compare
+                        INDEX_CREATE_TABLE.append(k)
+                        message_result += f' and {k}'
+                list_message.append(message_result)
+    return list_message
 """
 CALCULATION IF EXIST A CARTESIAN 
 A * B = C 
 """
-
 def verification_cartesian(dictionary_relation)-> list:
     # ITERATE OVER A SET OF LIST WITH INDEX
     list_tuple = list(dictionary_relation.values())
     dictionary_store_concat = dict()
     until = len(list_tuple)
     # FROM BEGIN TO EMD
-    for firstKey, extv in enumerate(list_tuple[0:until]):
-        for second_key,interv in enumerate(list_tuple[firstKey+1:], start=firstKey+1):
+    for firstKey, extv in enumerate(list_tuple):
+        for intern in list_tuple:
          # CONSTRAINT SUBSET
-         if extv.issubset(interv) or extv.issubset(interv):
+         if extv.issubset(intern) or intern.issubset(extv) :
             continue
-         dictionary_store_concat [firstKey, second_key]  = set_cartesian_product(list_tuple[firstKey], list_tuple[second_key])
+         dictionary_store_concat [firstKey, list_tuple.index(intern)]  = set_cartesian_product(list_tuple[firstKey], intern)
     # FROM END TO BEGIN
     for firstKey in range(until-1,-1,-1):
         for second_key in range (firstKey-1, -1, -1):
@@ -195,7 +190,7 @@ def verification_cartesian(dictionary_relation)-> list:
                 continue
             dictionary_store_concat[firstKey, second_key] = set_cartesian_product(list_tuple[firstKey], list_tuple[second_key])
     # MISS CARLO RETURN THE MESSAGE
-    return find_occurrence_cartesian(dictionary_store_concat,dictionary_relation)
+    return find_occurrence_cartesian(dictionary_store_concat,dictionary_relation, list_tuple)
 
 
 
@@ -209,18 +204,24 @@ def set_cartesian_product(set_tuple_one, set_tuple_two)-> set:
     return set_record
 
 # VERIFICATION IF THERE IS A CARTESIAN
-def find_occurrence_cartesian (dictionary_cartesian, original_dictionary)-> list:
+def find_occurrence_cartesian (dictionary_cartesian, original_dictionary, list_tuple)-> list:
     list_message = list()
     for k in dictionary_cartesian.keys():
         for ik in original_dictionary.keys():
             if dictionary_cartesian[k] == original_dictionary[ik]:
-                message = f'{ik} {message_cartesian} t{k[0]} and t{k[1]} '
-                list_message.append(message)
-                key_one = f't{k[0]}'
-                key_two = f't{k[1]}'
-                DICTIONARY_TABLE[key_one] = original_dictionary[key_one]
-                DICTIONARY_TABLE[key_two] = original_dictionary[key_two]
-                INDEX_CREATE_TABLE.append(k)
-    return  list_message
+                message = f'{ik} {message_cartesian}'
+                valueFirst = list_tuple[k[0]]
+                valueSecond = list_tuple[k[1]]
 
+                for control_key in original_dictionary.keys():
+                    if original_dictionary[control_key] == valueFirst:
+                        message +=f' {control_key}'
+                        DICTIONARY_TABLE[control_key] = original_dictionary[control_key]
+                        INDEX_CREATE_TABLE.append(control_key)
+                    if original_dictionary[control_key] == valueSecond:
+                        message += f' and {control_key}'
+                        DICTIONARY_TABLE[control_key] = original_dictionary[control_key]
+                        INDEX_CREATE_TABLE.append(control_key)
+                list_message.append(message)
+    return  list_message
 

@@ -569,19 +569,15 @@ class Traceroute(ICMPPing):
 
 
 """"
-The program run in multithreading the sending and receiving
-The result of the traceroute are printed only when an internal 
-flag is set up with true.
-The packet send are stored in a dictionary with a tuple
+The program is executed in a multithreaded manner, both sending and receiving.
+The result of the traceroute is printed only when an internal 
+flag is set to true.
+The packets sent are stored in a dictionary with a tuple
 (packet_id, seq_num_probes). The key is used to verify that 
-a packet is receiving back.
-The output is not collected in one line because I wanted to illustrates
-the fact I send three probes for ttl.
+a packet is received back.
+The output is not collected in one line because I wanted to illustrate
+The fact that I sent three probes for TTL.
 """
-
-
-
-
 
 # TODO: A multi-threaded traceroute implementation
 class MultiThreadedTraceRoute(Traceroute):
@@ -866,15 +862,15 @@ class WebServer(NetworkApplication):
 
 """"
 Every request coming from the client 
-will be forward from the Proxy to the WebServer if the cache
+will be forwarded from the Proxy to the Web Server if the cache
 is not present.
-When the Webserve is retrieve properly the page with HTTP status 200 ok, 
-the content ist stored in a cache that match the host name.
-The content of the cache it will erase when the application stop. 
-Further, there is the change to run the application with 
-two optional argument : -px , which set the proxy port 
-and -p , which set the webserver port.
-Alternatively, the default port are : proxy 8085 
+When the Webserve retrieves the page with HTTP status 200 ok, 
+The content is stored in a cache that matches the hostname.
+The content of the cache will be erased when the application stops. 
+Further, there is a change to run the application with 
+Two optional arguments: -px, which sets the proxy port 
+and -p, which sets the webserver port.
+Alternatively, the default ports are: proxy 8085 
 web server: 8080
 """
 

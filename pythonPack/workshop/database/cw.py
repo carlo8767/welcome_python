@@ -21,10 +21,3 @@ if len(sys.argv)>2: #task1
 	conn = sqlite3.connect(outDb); cursor = conn.cursor()
 	for sqlStatement in solution.task1(): cursor.execute(sqlStatement);
 	conn.commit(); conn.close()
-
-""""
-
-python3 cw.py input.db output.db
-
-
-"""
