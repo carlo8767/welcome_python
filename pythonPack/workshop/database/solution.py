@@ -135,20 +135,20 @@ def verify_intersection(dictionary_relation):
     list_message = list()
     # VERIFY IF THERE IS ONLY ONE MESSAGE
     sets_list = list(dictionary_relation.values())
-    dictionary_interset = dict()
+    dictionary_intersection = dict()
     for v in sets_list:
         for x in sets_list:
             if v.issubset(x) or x.issubset(v):
                 continue
             result = v.intersection(x)
             if result:
-                if result in dictionary_interset.values():
+                if result in dictionary_intersection.values():
                     continue
-                dictionary_interset[sets_list.index(v), sets_list.index(x)] = result
+                dictionary_intersection[sets_list.index(v), sets_list.index(x)] = result
                 break  # CANNOT HAVE MORE THAN ONE INTERSECTION
-    for unpack in dictionary_interset.keys():
+    for unpack in dictionary_intersection.keys():
         for internal_unpack in dictionary_relation.keys():
-            if dictionary_interset[unpack] == dictionary_relation[internal_unpack]:
+            if dictionary_intersection[unpack] == dictionary_relation[internal_unpack]:
                 result_values = sets_list[unpack[0]]
                 extra_result_values = sets_list[unpack[1]]
                 # NAME TABLE
