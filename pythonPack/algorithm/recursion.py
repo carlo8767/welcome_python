@@ -1,5 +1,8 @@
 # just an example list
+
+
 a_list = [1,2,3,4,5]
+
 
 # input a list
 # output True if the list is empty, False otherwise
@@ -17,7 +20,7 @@ def tail(l):
     return l[1:]
 
 # input a list
-# output the tuple (head(l), tail(l))
+# output the tuple (head(l), tail(l))x
 def get_head_and_tail(l):
     return head(l), tail(l)
 
@@ -62,7 +65,17 @@ def length(l):
     return 1 +length(tail(l))
 
 
-if __name__ == '__main__' :
+def fibonaci(n: int) -> int:
 
+    if n == 0 or n == 1:
+        return 3
+    else:
+        print(n)
+        return fibonaci(n-1) + fibonaci(n-2)
+
+
+
+if __name__ == '__main__' :
+    values  = fibonaci(5)
     list_a = [1, 5, 2, 3, 4]
     get_max(list_a, head(list_a))
