@@ -1,3 +1,5 @@
+from math import sqrt
+
 import numpy as np
 
 # simple function to read the datasets
@@ -20,46 +22,81 @@ def read_labels(file_name):
     f.close()
     return np.array(labels)
 
+def euclidian_distance(training_set):
+    elements = [x for x in training_set.tolist()]
+    list_distance = list()
+    for i in range(0, len(elements)-1):
+        x1, y1, z1 = elements[i]
+        x2, y2, z2 = elements[i+1]
+        distance = ((x2-x1)**2) +((y2-y1)**2) + ((z2-z1)**2)
+        squareit = sqrt(distance)
+        list_distance.append((i,i+1, squareit))
+    print(list_distance)
+
+def euclidian_distance_from_k(training_set, k, training_label)->list :
+    elements = [x for x in training_set.tolist()]
+    list_distance = list()
+    x2, y2, z2 = k
+    for i in range(0, len(elements)):
+        if k == elements[i]:
+            continue
+        else :
+            x1, y1, z1 = elements[i]
+            distance = sqrt(((x2-x1)**2) +((y2-y1)**2) + ((z2-z1)**2))
+            list_distance.append((k, i, distance, training_label[i]))
+    return list_distance
+
+def knn_classifier(training_set, training_label):
+    number_k = 19
+    true_positive = 0
+    true_negative = 0
+    false_positive = 0
+    false_negative = 0
+
+    threshold = 7+9+31
+    to_list = training_set.tolist()
+    for k in range (0, len(to_list)):
+         t,r,e = to_list[k]
+         if (t+r+e)<threshold:
+             a = euclidian_distance_from_k(training_set, to_list[k] , training_label)
+             a.sort(key=lambda  x : x[2])
+             pred_1 = sum(1 for i in range(number_k) if a[i][3] == 1)
+             pred_not1 = sum(1 for i in range(number_k) if a[i][3] == -1)
+             #  predict one
+             if  pred_1 > pred_not1:
+                 if training_label[k] == 1:
+                     true_positive += 1
+                 else :
+                      false_positive+=1
+             else :
+                 if training_label[k] == -1:
+                     true_negative += 1
+                 else:
+                      false_negative+= 1
+
+
+    accuracy = ((true_positive+true_negative)/ (true_negative+false_positive+false_negative+true_positive))
+    precision = ((true_positive)/ (true_positive+false_positive))
+    recall  = ((true_positive)/ (true_positive+false_negative))
+    print(f'the accuracy is {accuracy}, precision is  {precision} and recall is  {recall}')
+
+
+
+
+
+
+
 # loading traning set and respective labels from files
 # NOTE: only works if they are in the same folder as the Python file!
 training_set = read_dataset("training_set")
+print(type(training_set))
+# CHECK SHAPE 360 entity with 3 columns each
+a = training_set.shape
 training_labels = read_labels("training_labels")
+knn_classifier(training_set, training_labels)
 
 # loading validation set and respective labels from files
 # NOTE: only works if they are in the same folder as the Python file!
 validation_set = read_dataset("validation_set")
 validation_labels = read_labels("validation_labels")
 
-
-# have fun implementing the KNN classifier!
-
-def euclidian_distance():
-   array_dimension = np.array([[3, 3, 3], [0, 1, 2]])
-
-   list_euclidian_distance = list()
-   size_array = len(array_dimension)
-   count_columns = 0
-   euclidian_distances = 0
-   for v, n in enumerate(array_dimension):
-       count_columns+=1
-       if count_columns >= size_array:
-           break
-       for t,s in enumerate(n):
-          distance = (array_dimension[v+1][t]-s)
-          distance = pow(distance, 2)
-          list_euclidian_distance.append(distance)
-       list_euclidian_distance.append(sum(x for x in list_euclidian_distance))
-
-
-
-
-
-euclidian_distance()
-array_dimension = np.array([[3,3,3],[0,1,2]])
-array_dimension.std()
-# Get the square of the difference of the 2 vectors
-square = np.square(array_dimension[0], array_dimension[1])
-# Get the sum of the square
-sum_square = np.sum(square)
-# Column raw
-print(array_dimension[1][0])

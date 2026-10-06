@@ -34,7 +34,7 @@ class regression:
     def data_set (self):
         # PROVIDE DATA SET https://realpython.com/linear-regression-in-python/#simple-linear-regression-with-scikit-learn
         list_x = [1, 1, 1, 1, 1]
-        list_y = [3, 0, 0, 1, 4]
+        list_y = [4, 5, 3, 2, 2]
         x = np.array(list_x).reshape((-1,1))
         y = np.array(list_y)
         model = LinearRegression()
@@ -44,15 +44,15 @@ class regression:
         model.score(x,y)
         # PRINT THE LINEAR MODEL
         print(f"intercept b : {model.intercept_}")
-        print(f"slope mx {model.coef_}")
+        print(f"slope mx  {model.coef_}")
         #Lille Auxerre Under 3.5
         # Empoli vs Venez over 1.5 TAKE IT
         # Augsta vs Eintracth Under 3.5
 
     def second_data_set(self):
         # PROVIDE DATA SET https://realpython.com/linear-regression-in-python/#simple-linear-regression-with-scikit-learn
-        list_x = [2, 2, 2, 2, 2]
-        list_y = [4, 2, 4, 4, 2]
+        list_x = [3, 1, 3, 2, 3]
+        list_y = [1, 2, 1, 1, 1]
         x = np.array(list_x).reshape((-1, 1))
         y = np.array(list_y)
         model = LinearRegression()

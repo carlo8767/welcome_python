@@ -1,0 +1,12 @@
+
+python3 -m venv social
+source /home/robothg/PycharmProjects/welcome_python/pythonPack/social/social/bin/activateù
+pip install openML
+pip install -U scikit-learn
+openml.config.apikey = "76245a299e269e2417fc291d274be168"
+
+https://openml.github.io/openml-python/latest/
+
+https://openml.github.io/openml-python/latest/
+
+https://openml.github.io/openml-python/latest/reference/tasks/task/?utm_source=chatgpt.com
