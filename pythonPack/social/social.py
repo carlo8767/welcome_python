@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestClassifier
 if __name__ == '__main__':
 
 
-                openml.config.apikey = '76245a299e269e2417fc291d274be168'
+                openml.config.apikey = ''
                 suite = openml.study.get_suite("amlb-classification-all")  # Get a curated list of tasks for classification
                 task = openml.tasks.get_task(31)
 
