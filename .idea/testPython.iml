@@ -3,10 +3,11 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/pythonPack/social" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/pythonPack/social/social_virtual_environment/lib/python3.12/site-packages/sklearn/externals/array_api_compat" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/pythonPack/social/social" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 (welcome_python)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

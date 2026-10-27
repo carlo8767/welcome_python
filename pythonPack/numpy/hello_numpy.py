@@ -68,7 +68,6 @@ print(values)
 
 
 # TWO DIMENSIONAL NP ARRAY
-two_dimensional = np.array([[1,2][0,1]])
 two_dimensional = np.array([[1, 2, 3], [0, 9, 8]])
 print(two_dimensional)
 print(two_dimensional[0][1])
