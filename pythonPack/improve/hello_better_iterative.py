@@ -47,3 +47,11 @@ if __name__ == '__main__':
     mytuple = (0, 1, False)
     x = any(mytuple)
     print(x)
+
+
+    list_values = [2,4,6,8]
+    map_power = list(map(lambda n:n*2, list_values))
+    print(map_power)
+
+    filter_power = list(map(lambda p: p * 2, filter(lambda x: x > 2, list_values)))
+    print(filter_power)
