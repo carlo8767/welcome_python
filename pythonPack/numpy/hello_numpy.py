@@ -1,4 +1,4 @@
-
+from itertools import product
 import numpy as np
 import matplotlib as mp
 from matplotlib.pyplot import plot
@@ -68,11 +68,25 @@ print(values)
 
 
 # TWO DIMENSIONAL NP ARRAY
-two_dimensional = np.array([[1,2][0,1]])
 two_dimensional = np.array([[1, 2, 3], [0, 9, 8]])
 print(two_dimensional)
-print(two_dimensional[0][1])
-print(two_dimensional.shape)
+# print(two_dimensional[0][1])
+# print(two_dimensional.shape)
+#
+#
+# # NP ZERO VERY NICE
+# np_zero = np.zeros((16,4))
+
+
+
+def yields_generator():
+    for x in range(0,5):
+        yield x
+
+
+keep_alive = yields_generator()
+print(next(keep_alive))
+print(next(keep_alive))
 
 
 
