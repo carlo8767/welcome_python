@@ -3,7 +3,7 @@ from itertools import product
 
 
 ## Task 3
-
+# LOADING THE DATA
 class Dataloader:
 
     def __init__(self):
@@ -11,6 +11,7 @@ class Dataloader:
         self._trainingset = np.zeros([16,4])
         for i,im in enumerate(product([0,1],[0,1],[0,1],[0,1])):
             self._trainingset[i, :] = im
+            # HERE UNDERSTAND HOW TO PASS ONLY THE FOUR VALUES little cacca
 
         # set the evaluation set to be the same as the training
         # usually, we would not do this!
@@ -18,6 +19,7 @@ class Dataloader:
 
     def training_set(self):
         while True:
+            # RANDOM COMBINATION FOR THE DATA INPUT
             idx = np.random.randint(0,16)
             yield self._trainingset[idx, :]
 
@@ -25,6 +27,7 @@ class Dataloader:
         while True:
             idx = np.random.randint(0,16)
             yield self._evaluationset[idx, :]
+
 
 
 

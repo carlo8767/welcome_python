@@ -3,6 +3,10 @@ import numpy as np
 import matplotlib as mp
 from matplotlib.pyplot import plot
 
+from itertools import product
+
+from numpy.testing.print_coercion_tables import print_new_cast_table
+
 access_np = [[1,2,3],[4,5,6]]
 print(np.shape(access_np))
 print(access_np)
@@ -87,6 +91,95 @@ def yields_generator():
 keep_alive = yields_generator()
 print(next(keep_alive))
 print(next(keep_alive))
+
+def generators():
+      return  np.random.default_rng()
+
+# PSEUDO NUMBER GENERATOR
+keep_alive = generators()
+print(keep_alive)
+
+# Define two matrices as NumPy arrays
+matrix_a = np.array([[1, 2], [3, 4]])
+matrix_b = np.array([[5, 6], [7, 8]])
+
+# Perform matrix multiplication using the "@" operator
+result = matrix_a @ matrix_b
+print(result)
+
+# SUM ARRAY FOR A GIVEN AXIS
+sum_array = np.sum(matrix_a, axis=0)
+print(sum_array)
+
+
+arr = np.arange(24).reshape(2, 3, 4)
+# CREATE ARRAY WITH A SPECIFIC VALUE AND DIMENSION
+values = np.array(([0,1],[0,1],[0,1],[0,1]))
+st = np.array(list(product(values)))
+print(st.shape)
+print(arr)
+# VERY IMPORTANT BECAUSE THE INPUT I DO NOT KNOW WHAT WILL ASK
+ns = np.zeros((4,4))
+combinations = (list(product([0, 1], repeat=4)))
+for x, y in enumerate(combinations):
+    ns[x:]= y
+print(ns)
+
+
+arr = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])
+print(arr.shape)
+print(arr[0, 2:5])
+
+
+np_array = np.array([[0,1],[1,0],[1,1]])
+print(np_array.shape)
+
+# cartesian product
+combinations = (list(product([0, 1], repeat=3)))
+print(combinations)
+
+#NUMBER DIMENSION
+z = np.zeros([10,10])
+print(z.ndim)  # 2
+print(z.shape) # (1, 3)
+
+_trainingset = np.zeros([3, 10])
+print(_trainingset)
+for i, im in enumerate(np.array(list(product([0, 1])))):
+    _trainingset[i, :] = im
+
+new_array = np.arange(1,7).reshape(2,3)
+print(new_array)
+
+
+one_pred = np.arange(1,7).reshape(2,3)
+
+two_target = np.arange(7,13).reshape(2,3)
+
+sum_diff = np.zeros(two_target.shape)
+
+values = (one_pred - two_target)**2
+
+
+for x,y in enumerate(one_pred):
+    print("access", two_target[x])
+    print("y", y)
+    sum_diff [x] = np.sum((y-two_target[x]) ** 2)
+
+
+    def forward_variation(self, pred, target):
+
+        # STORED THE LOSS FUNCTION
+        m, n = (np.shape(pred))
+        self.loss_function = np.zeros((int(m),int(n)))
+        self.prediction = pred
+        self.target = target
+        for x,y in enumerate(pred):
+            self.loss_function [x] = np.sum((y - target[x])**2)
+
+        self.forward_out = self.loss_function
+        return self.forward_out
+print(type(sum_diff))
 
 
 
