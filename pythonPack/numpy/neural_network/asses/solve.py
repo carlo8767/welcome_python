@@ -145,7 +145,7 @@ class SquaredEuclideanLoss:
 
 
 # TASK THREE
-denseblock = Dense(3, 10, 'denseblock')
+denseblocktest = Dense(3, 10, 'denseblock')
 
 autoencoder = Network('autoencoder', [Dense(3, 4), Dense(4, 3)], 1.0)
 loss = SquaredEuclideanLoss()
