@@ -181,6 +181,16 @@ for x,y in enumerate(one_pred):
         return self.forward_out
 print(type(sum_diff))
 
+# WISE MULTIPLICAITON
+x1 = np.arange(9.0).reshape((3, 3))
+x2 = np.arange(3.0)
+print(np.multiply(x1, x2))
+
+
+f = np.arange(8).reshape(4,2)
+s = f.flat[1:3]
+print(s)
+
 
 
 
